@@ -1,0 +1,153 @@
+import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import {
+  invitationDetails,
+  invitationHosts,
+  invitations,
+  rsvpOptions,
+} from "@/db/schema";
+import { getSessionUser } from "@/lib/session";
+
+export const runtime = "nodejs";
+
+type CreateInvitationPayload = {
+  title?: string;
+  templateUrlDraft?: string;
+  templateUrlLive?: string;
+  date?: string;
+  time?: string;
+  locationName?: string;
+  address?: string;
+  mapLink?: string;
+  notes?: string;
+  timezone?: string;
+  rsvpOptions?: Array<{ key: string; label: string }>;
+};
+
+async function assertTemplateUrl(url: string, label: string) {
+  const response = await fetch(url, { method: "GET", cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`${label} template not reachable`);
+  }
+}
+
+export async function POST(request: Request) {
+  const user = await getSessionUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = (await request.json()) as CreateInvitationPayload;
+  const title = body.title?.trim();
+  if (!title) {
+    return NextResponse.json({ error: "Title required" }, { status: 400 });
+  }
+
+  const draftUrl = body.templateUrlDraft?.trim() || null;
+  const liveUrl = body.templateUrlLive?.trim() || null;
+
+  try {
+    if (draftUrl) {
+      await assertTemplateUrl(draftUrl, "Draft");
+    }
+    if (liveUrl) {
+      await assertTemplateUrl(liveUrl, "Live");
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Template not reachable";
+    return NextResponse.json(
+      { error: `${message}. Check the URL is being served.` },
+      { status: 400 }
+    );
+  }
+
+  const invitationId = crypto.randomUUID();
+  const hostId = crypto.randomUUID();
+
+  await db.insert(invitations).values({
+    id: invitationId,
+    ownerUserId: user.id,
+    title,
+    timezone: body.timezone?.trim() || "UTC",
+    templateUrlDraft: draftUrl,
+    templateUrlLive: liveUrl,
+    openRsvpToken: crypto.randomUUID(),
+    previewToken: crypto.randomUUID(),
+  });
+
+  await db.insert(invitationHosts).values({
+    id: hostId,
+    invitationId,
+    userId: user.id,
+    role: "owner",
+    canEdit: true,
+  });
+
+  await db.insert(invitationDetails).values({
+    invitationId,
+    date: body.date?.trim() || null,
+    time: body.time?.trim() || null,
+    locationName: body.locationName?.trim() || null,
+    address: body.address?.trim() || null,
+    mapLink: body.mapLink?.trim() || null,
+    notes: body.notes?.trim() || null,
+  });
+
+  const options = body.rsvpOptions?.length
+    ? body.rsvpOptions
+    : [
+        { key: "yes", label: "We will be there" },
+        { key: "no", label: "No thank you" },
+        { key: "maybe", label: "Maybe" },
+      ];
+
+  await db.insert(rsvpOptions).values(
+    options.map((option, index) => ({
+      id: crypto.randomUUID(),
+      invitationId,
+      key: option.key,
+      label: option.label,
+      isDefault: true,
+      sortOrder: index,
+    }))
+  );
+
+  const preview = await db
+    .select({ previewToken: invitations.previewToken, openRsvpToken: invitations.openRsvpToken })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId))
+    .limit(1);
+
+  return NextResponse.json({
+    id: invitationId,
+    previewToken: preview[0]?.previewToken ?? null,
+    openRsvpToken: preview[0]?.openRsvpToken ?? null,
+  });
+}
+
+export async function GET(request: Request) {
+  const user = await getSessionUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const results = await db
+    .select({
+      id: invitations.id,
+      title: invitations.title,
+      status: invitations.status,
+      createdAt: invitations.createdAt,
+    })
+    .from(invitations)
+    .innerJoin(
+      invitationHosts,
+      and(
+        eq(invitationHosts.invitationId, invitations.id),
+        eq(invitationHosts.userId, user.id)
+      )
+    )
+    .orderBy(invitations.createdAt);
+
+  return NextResponse.json({ invitations: results });
+}

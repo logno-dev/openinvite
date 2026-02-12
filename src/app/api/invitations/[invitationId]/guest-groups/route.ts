@@ -1,0 +1,76 @@
+import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { guestGroups, invitationHosts } from "@/db/schema";
+import { getSessionUser } from "@/lib/session";
+
+export const runtime = "nodejs";
+
+type CreateGuestGroupPayload = {
+  displayName?: string;
+  email?: string;
+  phone?: string;
+  expectedAdults?: number;
+  expectedKids?: number;
+  expectedTotal?: number;
+  openCount?: boolean;
+  notes?: string;
+};
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ invitationId: string }> }
+) {
+  const { invitationId } = await params;
+  const user = await getSessionUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allowed = await db
+    .select({ id: invitationHosts.id })
+    .from(invitationHosts)
+    .where(
+      and(
+        eq(invitationHosts.invitationId, invitationId),
+        eq(invitationHosts.userId, user.id)
+      )
+    )
+    .limit(1);
+
+  if (allowed.length === 0) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 401 });
+  }
+
+  const body = (await request.json()) as CreateGuestGroupPayload;
+  const displayName = body.displayName?.trim();
+  if (!displayName) {
+    return NextResponse.json({ error: "Display name required" }, { status: 400 });
+  }
+
+  const expectedAdults = Math.max(0, body.expectedAdults ?? 0);
+  const expectedKids = Math.max(0, body.expectedKids ?? 0);
+  const expectedTotal = Math.max(
+    body.expectedTotal ?? expectedAdults + expectedKids,
+    0
+  );
+
+  const groupId = crypto.randomUUID();
+  const token = crypto.randomUUID();
+
+  await db.insert(guestGroups).values({
+    id: groupId,
+    invitationId,
+    displayName,
+    email: body.email?.trim() || null,
+    phone: body.phone?.trim() || null,
+    token,
+    expectedAdults,
+    expectedKids,
+    expectedTotal,
+    openCount: body.openCount ?? false,
+    notes: body.notes?.trim() || null,
+  });
+
+  return NextResponse.json({ id: groupId, token });
+}

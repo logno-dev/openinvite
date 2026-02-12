@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1770864238804,
+      "tag": "0000_steep_krista_starr",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1770865253444,
+      "tag": "0001_wide_true_believers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770875648261,
+      "tag": "0002_mature_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1770876928070,
+      "tag": "0003_young_white_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1770876986435,
+      "tag": "0004_parallel_ink",
+      "breakpoints": true
+    }
+  ]
+}

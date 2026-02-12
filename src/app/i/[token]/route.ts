@@ -1,0 +1,126 @@
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import {
+  guestGroups,
+  invitationDetails,
+  invitationHosts,
+  invitations,
+  rsvpOptions,
+  users,
+} from "@/db/schema";
+import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
+import { renderRsvpForm } from "@/lib/rsvp";
+
+export const runtime = "nodejs";
+
+async function fetchTemplate(url: string) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error("Template fetch failed");
+  }
+  return response.text();
+}
+
+export async function GET(
+  _: Request,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params;
+  const group = await db
+    .select({
+      id: guestGroups.id,
+      invitationId: guestGroups.invitationId,
+      displayName: guestGroups.displayName,
+      expectedAdults: guestGroups.expectedAdults,
+      expectedKids: guestGroups.expectedKids,
+      expectedTotal: guestGroups.expectedTotal,
+    })
+    .from(guestGroups)
+    .where(eq(guestGroups.token, token))
+    .limit(1);
+
+  if (group.length === 0) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const invitation = await db
+    .select({
+      id: invitations.id,
+      title: invitations.title,
+      templateUrlLive: invitations.templateUrlLive,
+    })
+    .from(invitations)
+    .where(eq(invitations.id, group[0].invitationId))
+    .limit(1);
+
+  if (invitation.length === 0 || !invitation[0].templateUrlLive) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const record = invitation[0];
+
+  const details = await db
+    .select()
+    .from(invitationDetails)
+    .where(eq(invitationDetails.invitationId, record.id))
+    .limit(1);
+
+  const options = await db
+    .select({ key: rsvpOptions.key, label: rsvpOptions.label })
+    .from(rsvpOptions)
+    .where(eq(rsvpOptions.invitationId, record.id));
+
+  const hostNames = await db
+    .select({ name: users.displayName })
+    .from(invitationHosts)
+    .innerJoin(users, eq(users.id, invitationHosts.userId))
+    .where(eq(invitationHosts.invitationId, record.id));
+
+  let injected = "";
+  try {
+    const html = await fetchTemplate(record.templateUrlLive);
+    const sanitized = sanitizeTemplate(html);
+    injected = injectTemplateData(sanitized, {
+      title: record.title,
+      date: details[0]?.date ?? null,
+      time: details[0]?.time ?? null,
+      locationName: details[0]?.locationName ?? null,
+      address: details[0]?.address ?? null,
+      mapLink: details[0]?.mapLink ?? null,
+      notes: details[0]?.notes ?? null,
+      hostNames: hostNames
+        .map((host) => host.name)
+        .filter(Boolean)
+        .join(" + "),
+      rsvpOptions: options,
+      guestDisplayName: group[0].displayName,
+      expectedAdults: group[0].expectedAdults,
+      expectedKids: group[0].expectedKids,
+      expectedTotal: group[0].expectedTotal,
+      responseHtml: renderRsvpForm({
+        actionUrl: "/api/rsvp",
+        guestName: group[0].displayName,
+        expectedAdults: group[0].expectedAdults,
+        expectedKids: group[0].expectedKids,
+        expectedTotal: group[0].expectedTotal,
+        options,
+        tokenFieldName: "guestToken",
+        tokenValue: token,
+      }),
+    });
+  } catch {
+    injected = `<!doctype html><html><head><meta charset="utf-8"><title>Template not available</title></head><body style="font-family: sans-serif; padding: 40px; background: #0a0a14; color: #fef7ff;"><h1>Template not available</h1><p>Check that the live template URL is reachable and currently serving HTML.</p></body></html>`;
+    return new NextResponse(injected, {
+      status: 502,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  return new NextResponse(injected, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Security-Policy": "default-src 'none'; img-src https: data:; style-src 'unsafe-inline' https:;",
+    },
+  });
+}
