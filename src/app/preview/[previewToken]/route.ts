@@ -31,6 +31,7 @@ export async function GET(
       id: invitations.id,
       title: invitations.title,
       templateUrlDraft: invitations.templateUrlDraft,
+      openRsvpToken: invitations.openRsvpToken,
     })
     .from(invitations)
     .where(eq(invitations.previewToken, previewToken))
@@ -41,7 +42,8 @@ export async function GET(
   }
 
   const record = invitation[0];
-  if (!record.templateUrlDraft) {
+  const templateUrlDraft = record.templateUrlDraft;
+  if (!templateUrlDraft) {
     return NextResponse.json({ error: "Template URL missing" }, { status: 400 });
   }
 
@@ -64,7 +66,7 @@ export async function GET(
 
   let injected = "";
   try {
-    const html = await fetchTemplate(record.templateUrlDraft);
+    const html = await fetchTemplate(templateUrlDraft);
     const sanitized = sanitizeTemplate(html);
     injected = injectTemplateData(sanitized, {
       title: record.title,

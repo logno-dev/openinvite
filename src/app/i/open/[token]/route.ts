@@ -30,11 +30,16 @@ export async function GET(
     .where(eq(invitations.openRsvpToken, token))
     .limit(1);
 
-  if (invitation.length === 0 || !invitation[0].templateUrlLive) {
+  if (invitation.length === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const record = invitation[0];
+  const templateUrlLive = record.templateUrlLive;
+
+  if (!templateUrlLive) {
+    return NextResponse.json({ error: "Template URL missing" }, { status: 400 });
+  }
 
   const details = await db
     .select()
@@ -49,7 +54,7 @@ export async function GET(
 
   let injected = "";
   try {
-    const html = await fetchTemplate(record.templateUrlLive);
+    const html = await fetchTemplate(templateUrlLive);
     const sanitized = sanitizeTemplate(html);
     injected = injectTemplateData(sanitized, {
       title: record.title,
