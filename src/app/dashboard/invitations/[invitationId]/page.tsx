@@ -60,7 +60,7 @@ export default function EditInvitationPage() {
         data = (await response.json()) as InvitationResponse;
       }
 
-      if (!response.ok) {
+      if (!response.ok || !("invitation" in data) || !("rsvpOptions" in data)) {
         setMessage((data as { error?: string }).error ?? "Failed to load");
         return;
       }
