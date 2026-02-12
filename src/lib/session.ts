@@ -1,7 +1,7 @@
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db/client";
 import { sessions, users } from "@/db/schema";
-import type { NextResponse } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 
 export const SESSION_COOKIE = "openinvite_session";
 const SESSION_TTL_DAYS = 30;
@@ -65,7 +65,7 @@ export async function getSessionUserByToken(token: string) {
   return result[0] ?? null;
 }
 
-export async function getSessionUser(request: Request) {
+export async function getSessionUser(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   return getSessionUserByToken(token);

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
@@ -33,7 +33,7 @@ async function assertTemplateUrl(url: string, label: string) {
 }
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ invitationId: string }> }
 ) {
   const { invitationId } = await params;
@@ -147,7 +147,7 @@ export async function PATCH(
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ invitationId: string }> }
 ) {
   try {
