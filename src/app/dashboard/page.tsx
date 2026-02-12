@@ -95,6 +95,12 @@ export default async function DashboardPage() {
                     >
                       Edit details
                     </a>
+                    <a
+                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2"
+                      href={`/dashboard/invitations/${invite.id}/guests`}
+                    >
+                      Manage guests
+                    </a>
                     {invite.previewToken ? (
                       <a
                         className="rounded-full border border-white/25 bg-white/5 px-4 py-2"

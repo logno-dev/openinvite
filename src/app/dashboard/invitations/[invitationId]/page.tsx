@@ -87,6 +87,7 @@ export default function EditInvitationPage() {
         previewToken: data.invitation.previewToken,
         openRsvpToken: data.invitation.openRsvpToken,
       });
+
     }
 
     load();
@@ -141,6 +142,7 @@ export default function EditInvitationPage() {
     setSaving(false);
   }
 
+
   if (!form) {
     return (
       <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
@@ -165,6 +167,12 @@ export default function EditInvitationPage() {
             Template labels include the div id in parentheses.
           </p>
         </div>
+        <a
+          className="self-start rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+          href="/dashboard"
+        >
+          Back to dashboard
+        </a>
 
         <form
           onSubmit={handleSubmit}
@@ -326,6 +334,12 @@ export default function EditInvitationPage() {
             >
               {saving ? "Saving..." : "Save changes"}
             </button>
+            <a
+              className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+              href={`/dashboard/invitations/${invitationId}/guests`}
+            >
+              Manage guests
+            </a>
             {form.previewToken && form.templateUrlDraft ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"

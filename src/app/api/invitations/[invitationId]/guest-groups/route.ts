@@ -17,6 +17,51 @@ type CreateGuestGroupPayload = {
   notes?: string;
 };
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ invitationId: string }> }
+) {
+  const { invitationId } = await params;
+  const user = await getSessionUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allowed = await db
+    .select({ id: invitationHosts.id })
+    .from(invitationHosts)
+    .where(
+      and(
+        eq(invitationHosts.invitationId, invitationId),
+        eq(invitationHosts.userId, user.id)
+      )
+    )
+    .limit(1);
+
+  if (allowed.length === 0) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 401 });
+  }
+
+  const groups = await db
+    .select({
+      id: guestGroups.id,
+      displayName: guestGroups.displayName,
+      email: guestGroups.email,
+      phone: guestGroups.phone,
+      expectedAdults: guestGroups.expectedAdults,
+      expectedKids: guestGroups.expectedKids,
+      expectedTotal: guestGroups.expectedTotal,
+      openCount: guestGroups.openCount,
+      token: guestGroups.token,
+      createdAt: guestGroups.createdAt,
+    })
+    .from(guestGroups)
+    .where(eq(guestGroups.invitationId, invitationId))
+    .orderBy(guestGroups.createdAt);
+
+  return NextResponse.json({ guestGroups: groups });
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ invitationId: string }> }
