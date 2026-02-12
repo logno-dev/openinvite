@@ -136,7 +136,8 @@ export async function GET(request: NextRequest) {
     .select({
       id: invitations.id,
       title: invitations.title,
-      status: invitations.status,
+      templateUrlDraft: invitations.templateUrlDraft,
+      templateUrlLive: invitations.templateUrlLive,
       createdAt: invitations.createdAt,
     })
     .from(invitations)
