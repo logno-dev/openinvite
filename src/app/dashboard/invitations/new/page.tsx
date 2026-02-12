@@ -71,7 +71,7 @@ export default function NewInvitationPage() {
     });
 
     const contentType = response.headers.get("content-type") ?? "";
-    let data: { previewToken?: string | null; error?: string } = {};
+    let data: { previewToken?: string | null; openRsvpToken?: string | null; error?: string } = {};
 
     if (contentType.includes("application/json")) {
       data = await response.json();
