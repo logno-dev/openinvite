@@ -23,7 +23,6 @@ type UpdateInvitationPayload = {
   eventTime?: string | null;
   dateFormat?: string | null;
   timeFormat?: string | null;
-  skipDraftValidation?: boolean;
   locationName?: string | null;
   address?: string | null;
   mapLink?: string | null;
@@ -84,8 +83,8 @@ export async function PATCH(
   }
 
   try {
-    if (invitationUpdate.templateUrlDraft && !body.skipDraftValidation) {
-      await assertTemplateUrl(invitationUpdate.templateUrlDraft, "Draft");
+    if (invitationUpdate.templateUrlDraft) {
+      // Draft URLs are not validated to allow localhost previews.
     }
     if (invitationUpdate.templateUrlLive) {
       await assertTemplateUrl(invitationUpdate.templateUrlLive, "Live");

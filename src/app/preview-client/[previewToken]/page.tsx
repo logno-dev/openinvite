@@ -10,6 +10,7 @@ type PreviewPayload = {
     id: string;
     title: string;
     templateUrlDraft: string | null;
+    templateUrlLive: string | null;
     openRsvpToken: string | null;
     timezone: string;
     countMode: "split" | "total" | string;
@@ -159,9 +160,15 @@ export default function PreviewClientPage() {
 
   useEffect(() => {
     async function render() {
-      if (!payload || !payload.invitation.templateUrlDraft) return;
+      if (!payload) return;
+      const templateUrl =
+        payload.invitation.templateUrlDraft ?? payload.invitation.templateUrlLive;
+      if (!templateUrl) {
+        setError("Template URL is missing.");
+        return;
+      }
       try {
-        const templateResponse = await fetch(payload.invitation.templateUrlDraft, {
+        const templateResponse = await fetch(templateUrl, {
           cache: "no-store",
         });
         if (!templateResponse.ok) {

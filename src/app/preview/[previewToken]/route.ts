@@ -35,6 +35,7 @@ export async function GET(
       id: invitations.id,
       title: invitations.title,
       templateUrlDraft: invitations.templateUrlDraft,
+      templateUrlLive: invitations.templateUrlLive,
       openRsvpToken: invitations.openRsvpToken,
       countMode: invitations.countMode,
     })
@@ -47,7 +48,7 @@ export async function GET(
   }
 
   const record = invitation[0];
-  const templateUrlDraft = record.templateUrlDraft;
+  const templateUrlDraft = record.templateUrlDraft || record.templateUrlLive;
   if (!templateUrlDraft) {
     return NextResponse.json({ error: "Template URL missing" }, { status: 400 });
   }
