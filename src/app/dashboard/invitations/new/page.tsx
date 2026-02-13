@@ -339,7 +339,7 @@ export default function NewInvitationPage() {
             >
               {saving ? "Saving..." : "Create invitation"}
             </button>
-            {previewToken && form.templateUrlDraft ? (
+            {previewToken && (form.templateUrlDraft || form.templateUrlLive) ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
                 href={`/preview-client/${previewToken}?mode=guest`}

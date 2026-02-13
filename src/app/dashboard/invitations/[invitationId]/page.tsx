@@ -451,7 +451,7 @@ export default function EditInvitationPage() {
             >
               Manage guests
             </a>
-            {form.previewToken && form.templateUrlDraft ? (
+            {form.previewToken && (form.templateUrlDraft || form.templateUrlLive) ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
                 href={`/preview-client/${form.previewToken}?mode=guest`}
