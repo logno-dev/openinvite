@@ -454,7 +454,7 @@ export default function EditInvitationPage() {
             {form.previewToken && form.templateUrlDraft ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-                href={`/preview/${form.previewToken}?mode=guest`}
+                href={`/preview-client/${form.previewToken}?mode=guest`}
                 target="_blank"
                 rel="noreferrer"
               >
