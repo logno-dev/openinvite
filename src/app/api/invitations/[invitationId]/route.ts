@@ -14,13 +14,19 @@ export const runtime = "nodejs";
 type UpdateInvitationPayload = {
   title?: string;
   timezone?: string;
+  countMode?: "split" | "total";
   templateUrlDraft?: string | null;
   templateUrlLive?: string | null;
   date?: string | null;
   time?: string | null;
+  eventDate?: string | null;
+  eventTime?: string | null;
+  dateFormat?: string | null;
+  timeFormat?: string | null;
   locationName?: string | null;
   address?: string | null;
   mapLink?: string | null;
+  mapEmbed?: string | null;
   notes?: string | null;
   rsvpOptions?: Array<{ key: string; label: string }>;
 };
@@ -66,6 +72,9 @@ export async function PATCH(
   if (body.timezone !== undefined) {
     invitationUpdate.timezone = body.timezone.trim();
   }
+  if (body.countMode !== undefined) {
+    invitationUpdate.countMode = body.countMode;
+  }
   if (body.templateUrlDraft !== undefined) {
     invitationUpdate.templateUrlDraft = body.templateUrlDraft?.trim() || null;
   }
@@ -98,9 +107,14 @@ export async function PATCH(
   if (
     body.date !== undefined ||
     body.time !== undefined ||
+    body.eventDate !== undefined ||
+    body.eventTime !== undefined ||
+    body.dateFormat !== undefined ||
+    body.timeFormat !== undefined ||
     body.locationName !== undefined ||
     body.address !== undefined ||
     body.mapLink !== undefined ||
+    body.mapEmbed !== undefined ||
     body.notes !== undefined
   ) {
     await db
@@ -109,19 +123,29 @@ export async function PATCH(
         invitationId,
         date: body.date?.trim() || null,
         time: body.time?.trim() || null,
+        eventDate: body.eventDate?.trim() || null,
+        eventTime: body.eventTime?.trim() || null,
+        dateFormat: body.dateFormat?.trim() || null,
+        timeFormat: body.timeFormat?.trim() || null,
         locationName: body.locationName?.trim() || null,
         address: body.address?.trim() || null,
         mapLink: body.mapLink?.trim() || null,
+        mapEmbed: body.mapEmbed?.trim() || null,
         notes: body.notes?.trim() || null,
       })
       .onConflictDoUpdate({
-      target: invitationDetails.invitationId,
+        target: invitationDetails.invitationId,
         set: {
           date: body.date?.trim() || null,
           time: body.time?.trim() || null,
+          eventDate: body.eventDate?.trim() || null,
+          eventTime: body.eventTime?.trim() || null,
+          dateFormat: body.dateFormat?.trim() || null,
+          timeFormat: body.timeFormat?.trim() || null,
           locationName: body.locationName?.trim() || null,
           address: body.address?.trim() || null,
           mapLink: body.mapLink?.trim() || null,
+          mapEmbed: body.mapEmbed?.trim() || null,
           notes: body.notes?.trim() || null,
         },
       });
@@ -177,12 +201,13 @@ export async function GET(
         id: invitations.id,
         title: invitations.title,
         timezone: invitations.timezone,
-        templateUrlDraft: invitations.templateUrlDraft,
-        templateUrlLive: invitations.templateUrlLive,
-        openRsvpToken: invitations.openRsvpToken,
-        previewToken: invitations.previewToken,
-        createdAt: invitations.createdAt,
-      })
+      templateUrlDraft: invitations.templateUrlDraft,
+      templateUrlLive: invitations.templateUrlLive,
+      openRsvpToken: invitations.openRsvpToken,
+      previewToken: invitations.previewToken,
+      createdAt: invitations.createdAt,
+      countMode: invitations.countMode,
+    })
       .from(invitations)
       .where(eq(invitations.id, invitationId))
       .limit(1);

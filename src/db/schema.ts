@@ -30,6 +30,7 @@ export const invitations = sqliteTable("invitations", {
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   timezone: text("timezone").notNull().default("UTC"),
+  countMode: text("count_mode").notNull().default("split"),
   templateUrlDraft: text("template_url_draft"),
   templateUrlLive: text("template_url_live"),
   openRsvpToken: text("open_rsvp_token")
@@ -54,9 +55,14 @@ export const invitationDetails = sqliteTable("invitation_details", {
     .primaryKey(),
   date: text("date"),
   time: text("time"),
+  eventDate: text("event_date"),
+  eventTime: text("event_time"),
+  dateFormat: text("date_format"),
+  timeFormat: text("time_format"),
   locationName: text("location_name"),
   address: text("address"),
   mapLink: text("map_link"),
+  mapEmbed: text("map_embed"),
   notes: text("notes"),
 });
 
@@ -73,6 +79,21 @@ export const invitationHosts = sqliteTable("invitation_hosts", {
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const hostInvites = sqliteTable("host_invites", {
+  id: text("id").primaryKey(),
+  invitationId: text("invitation_id")
+    .notNull()
+    .references(() => invitations.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  usedAt: integer("used_at", { mode: "timestamp" }),
+  usedByUserId: text("used_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
 });
 
 export const rsvpOptions = sqliteTable("rsvp_options", {

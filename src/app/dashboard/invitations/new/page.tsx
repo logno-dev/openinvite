@@ -8,11 +8,17 @@ type InvitationForm = {
   templateUrlLive: string;
   date: string;
   time: string;
+  eventDate: string;
+  eventTime: string;
+  dateFormat: string;
+  timeFormat: string;
   locationName: string;
   address: string;
   mapLink: string;
+  mapEmbed: string;
   notes: string;
   timezone: string;
+  countMode: "split" | "total";
   rsvpYes: string;
   rsvpNo: string;
   rsvpMaybe: string;
@@ -25,11 +31,17 @@ export default function NewInvitationPage() {
     templateUrlLive: "",
     date: "",
     time: "",
+    eventDate: "",
+    eventTime: "",
+    dateFormat: "MMM d, yyyy",
+    timeFormat: "h:mm a",
     locationName: "",
     address: "",
     mapLink: "",
+    mapEmbed: "",
     notes: "",
     timezone: "UTC",
+    countMode: "split",
     rsvpYes: "We will be there",
     rsvpNo: "No thank you",
     rsvpMaybe: "Maybe",
@@ -57,11 +69,17 @@ export default function NewInvitationPage() {
         templateUrlLive: form.templateUrlLive,
         date: form.date,
         time: form.time,
+        eventDate: form.eventDate,
+        eventTime: form.eventTime,
+        dateFormat: form.dateFormat,
+        timeFormat: form.timeFormat,
         locationName: form.locationName,
         address: form.address,
         mapLink: form.mapLink,
+        mapEmbed: form.mapEmbed,
         notes: form.notes,
         timezone: form.timezone,
+        countMode: form.countMode,
         rsvpOptions: [
           { key: "yes", label: form.rsvpYes },
           { key: "no", label: form.rsvpNo },
@@ -96,7 +114,7 @@ export default function NewInvitationPage() {
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
             New invitation
           </p>
-          <h1 className="font-[var(--font-display)] text-5xl tracking-[0.12em]">
+          <h1 className="font-[var(--font-display)] text-3xl tracking-[0.12em] sm:text-4xl lg:text-5xl">
             Build the card data
           </h1>
           <p className="mt-3 text-sm text-[var(--muted)]">
@@ -146,25 +164,54 @@ export default function NewInvitationPage() {
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Date <span className="normal-case">(id: date)</span>
+                Event date <span className="normal-case">(id: date)</span>
               </label>
               <input
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
-                value={form.date}
-                onChange={(event) => updateField("date", event.target.value)}
-                placeholder="Sep 14, 2026"
+                type="date"
+                value={form.eventDate}
+                onChange={(event) => updateField("eventDate", event.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Time <span className="normal-case">(id: time)</span>
+                Event time <span className="normal-case">(id: time)</span>
               </label>
               <input
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
-                value={form.time}
-                onChange={(event) => updateField("time", event.target.value)}
-                placeholder="5:30 PM"
+                type="time"
+                value={form.eventTime}
+                onChange={(event) => updateField("eventTime", event.target.value)}
               />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Date format
+              </label>
+              <select
+                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.dateFormat}
+                onChange={(event) => updateField("dateFormat", event.target.value)}
+              >
+                <option value="MMM d, yyyy">Feb 18, 2026</option>
+                <option value="MMMM d, yyyy">February 18, 2026</option>
+                <option value="EEE, MMM d">Wed, Feb 18</option>
+                <option value="yyyy-MM-dd">2026-02-18</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Time format
+              </label>
+              <select
+                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.timeFormat}
+                onChange={(event) => updateField("timeFormat", event.target.value)}
+              >
+                <option value="h:mm a">6:00 PM</option>
+                <option value="h a">6 PM</option>
+                <option value="HH:mm">18:00</option>
+              </select>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -197,6 +244,17 @@ export default function NewInvitationPage() {
                 value={form.mapLink}
                 onChange={(event) => updateField("mapLink", event.target.value)}
                 placeholder="https://maps.example.com"
+              />
+            </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Map embed code <span className="normal-case">(id: map_link)</span>
+              </label>
+              <textarea
+                className="min-h-[120px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.mapEmbed}
+                onChange={(event) => updateField("mapEmbed", event.target.value)}
+                placeholder="<iframe src=...></iframe>"
               />
             </div>
             <div className="flex flex-col gap-2 md:col-span-2">
@@ -256,9 +314,24 @@ export default function NewInvitationPage() {
                 onChange={(event) => updateField("timezone", event.target.value)}
               />
             </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Count mode
+              </label>
+              <select
+                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.countMode}
+                onChange={(event) =>
+                  updateField("countMode", event.target.value as "split" | "total")
+                }
+              >
+                <option value="split">Adults + Kids</option>
+                <option value="total">Total guests only</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               type="submit"
               className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black shadow-lg shadow-[var(--accent)]/40 transition hover:-translate-y-0.5"
@@ -269,7 +342,7 @@ export default function NewInvitationPage() {
             {previewToken && form.templateUrlDraft ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-                href={`/preview/${previewToken}`}
+                href={`/preview/${previewToken}?mode=guest`}
                 target="_blank"
                 rel="noreferrer"
               >

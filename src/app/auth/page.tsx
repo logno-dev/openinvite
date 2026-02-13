@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type FormState = {
   email: string;
@@ -11,6 +11,8 @@ type FormState = {
 
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/dashboard";
   const [registerState, setRegisterState] = useState<FormState>({
     email: "",
     password: "",
@@ -37,7 +39,7 @@ export default function AuthPage() {
 
     const data = await response.json();
     if (response.ok) {
-      router.push("/dashboard");
+      router.push(nextPath);
       return;
     }
     setRegisterMessage(data.error);
@@ -57,7 +59,7 @@ export default function AuthPage() {
 
     const data = await response.json();
     if (response.ok) {
-      router.push("/dashboard");
+      router.push(nextPath);
       return;
     }
     setLoginMessage(data.error);
@@ -71,7 +73,7 @@ export default function AuthPage() {
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
             OpenInvite access
           </p>
-          <h1 className="font-[var(--font-display)] text-5xl tracking-[0.12em]">
+          <h1 className="font-[var(--font-display)] text-3xl tracking-[0.12em] sm:text-4xl lg:text-5xl">
             Start the party.
           </h1>
           <p className="max-w-xl text-base text-[var(--muted)]">

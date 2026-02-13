@@ -20,8 +20,14 @@ type CreateInvitationPayload = {
   locationName?: string;
   address?: string;
   mapLink?: string;
+  mapEmbed?: string;
   notes?: string;
   timezone?: string;
+  countMode?: "split" | "total";
+  eventDate?: string;
+  eventTime?: string;
+  dateFormat?: string;
+  timeFormat?: string;
   rsvpOptions?: Array<{ key: string; label: string }>;
 };
 
@@ -70,6 +76,7 @@ export async function POST(request: NextRequest) {
     ownerUserId: user.id,
     title,
     timezone: body.timezone?.trim() || "UTC",
+    countMode: body.countMode ?? "split",
     templateUrlDraft: draftUrl,
     templateUrlLive: liveUrl,
     openRsvpToken: crypto.randomUUID(),
@@ -88,9 +95,14 @@ export async function POST(request: NextRequest) {
     invitationId,
     date: body.date?.trim() || null,
     time: body.time?.trim() || null,
+    eventDate: body.eventDate?.trim() || null,
+    eventTime: body.eventTime?.trim() || null,
+    dateFormat: body.dateFormat?.trim() || null,
+    timeFormat: body.timeFormat?.trim() || null,
     locationName: body.locationName?.trim() || null,
     address: body.address?.trim() || null,
     mapLink: body.mapLink?.trim() || null,
+    mapEmbed: body.mapEmbed?.trim() || null,
     notes: body.notes?.trim() || null,
   });
 

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const responseKey = form.get("response")?.toString() || "";
   const adults = parseNumber(form.get("adults")?.toString() || null);
   const kids = parseNumber(form.get("kids")?.toString() || null);
-  const total = parseNumber(form.get("total")?.toString() || null);
+  let total = parseNumber(form.get("total")?.toString() || null);
   const message = form.get("message")?.toString().trim() || null;
 
   if (!responseKey) {
@@ -91,6 +91,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid RSVP" }, { status: 400 });
   }
 
+  const invitationConfig = await db
+    .select({ countMode: invitations.countMode })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId))
+    .limit(1);
+
+  if (invitationConfig[0]?.countMode === "split") {
+    total = adults + kids;
+  }
+
   const validOption = await findOption(invitationId, responseKey);
   if (!validOption) {
     return NextResponse.json({ error: "Invalid response option" }, { status: 400 });
@@ -107,7 +117,14 @@ export async function POST(request: Request) {
     respondedByUserId: null,
   });
 
-  const thankYou = `<!doctype html><html><head><meta charset="utf-8"><title>RSVP received</title></head><body style="font-family: sans-serif; padding: 40px; background: #0a0a14; color: #fef7ff;"><h1>RSVP received</h1><p>Thanks${guestDisplayName ? ", " + guestDisplayName : ""}. You can return to update your response anytime.</p></body></html>`;
+  const calendarToken = guestToken ?? openToken ?? "";
+  const calendarLink = calendarToken
+    ? `<a href="/api/calendar/${calendarToken}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#00f0ff;color:#0a0a14;text-decoration:none;font-weight:600;">Add to calendar</a>`
+    : "";
+  const backLink = guestToken
+    ? `<a href="/i/${guestToken}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);color:#fef7ff;text-decoration:none;font-weight:600;">Back to invitation</a>`
+    : "";
+  const thankYou = `<!doctype html><html><head><meta charset="utf-8"><title>RSVP received</title></head><body style="font-family: system-ui; padding: 40px; background: #0a0a14; color: #fef7ff; display:flex; align-items:center; justify-content:center; min-height:100vh;"><main style="text-align:center; max-width:520px; display:grid; gap:16px;"><h1 style="font-size:36px; margin:0;">RSVP received</h1><p style="margin:0; color:rgba(255,255,255,0.7);">Thanks${guestDisplayName ? ", " + guestDisplayName : ""}. You can return to update your response anytime.</p><div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">${calendarLink}${backLink}</div></main></body></html>`;
   return new NextResponse(thankYou, {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });

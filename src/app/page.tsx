@@ -22,8 +22,8 @@ export default async function Home() {
           </span>
         </div>
         <nav className="hidden items-center gap-6 text-sm text-[var(--muted)] md:flex">
-          <a className="transition-colors hover:text-[var(--foreground)]" href="#templates">
-            Themes
+          <a className="transition-colors hover:text-[var(--foreground)]" href="#how">
+            How it works
           </a>
           <a className="transition-colors hover:text-[var(--foreground)]" href="#hosts">
             Hosts
@@ -38,6 +38,12 @@ export default async function Home() {
             {user ? "Go to dashboard" : "Sign in"}
           </a>
         </nav>
+        <a
+          className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-[var(--foreground)] shadow-sm transition hover:-translate-y-0.5 hover:border-white/40 md:hidden"
+          href={user ? "/dashboard" : "/auth"}
+        >
+          {user ? "Dashboard" : "Sign in"}
+        </a>
       </header>
 
       <main className="relative mx-auto w-full max-w-6xl px-6 pb-20 pt-10">
@@ -49,41 +55,27 @@ export default async function Home() {
               </span>
               <span>Color-first invites</span>
             </div>
-            <h1 className="font-[var(--font-display)] text-5xl leading-[0.9] text-[var(--foreground)] sm:text-6xl lg:text-7xl motion-safe:animate-[reveal_800ms_ease-out]">
+            <h1 className="font-[var(--font-display)] text-4xl leading-[0.95] text-[var(--foreground)] sm:text-5xl lg:text-6xl motion-safe:animate-[reveal_800ms_ease-out]">
               Throw a louder invite.
             </h1>
             <p className="max-w-xl text-lg leading-relaxed text-[var(--muted)] motion-safe:animate-[reveal_900ms_ease-out]">
-              OpenInvite brings neon energy to your guest list. Build bold
-              invitation pages, collect RSVPs in minutes, and keep every host in
-              sync from the dance floor to the last call.
+              Bring your own hosted HTML template. OpenInvite injects invitation
+              details, guest-specific data, and the RSVP form into your page,
+              while you manage hosts and guests from one dashboard.
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <button className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black shadow-lg shadow-[var(--accent)]/40 transition hover:-translate-y-0.5 hover:bg-[var(--accent-strong)]">
-                Start a party page
-              </button>
-              <button className="rounded-full border border-white/30 bg-white/5 px-6 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:-translate-y-0.5">
-                See a live invite
-              </button>
-            </div>
-            <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm sm:grid-cols-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-                  Guests
-                </p>
-                <p className="text-2xl font-semibold text-[var(--foreground)]">128 invited</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-                  RSVPs
-                </p>
-                <p className="text-2xl font-semibold text-[var(--foreground)]">96 confirmed</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-                  Vibe
-                </p>
-                <p className="text-2xl font-semibold text-[var(--foreground)]">Electric</p>
-              </div>
+              <a
+                className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black shadow-lg shadow-[var(--accent)]/40 transition hover:-translate-y-0.5 hover:bg-[var(--accent-strong)]"
+                href={user ? "/dashboard/invitations/new" : "/auth"}
+              >
+                Start an invite
+              </a>
+              <a
+                className="rounded-full border border-white/30 bg-white/5 px-6 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:-translate-y-0.5"
+                href={user ? "/dashboard" : "/auth"}
+              >
+                View dashboard
+              </a>
             </div>
           </div>
 
@@ -96,7 +88,7 @@ export default async function Home() {
                 </span>
                 <span className="text-xs text-[var(--muted)]">Invite #777</span>
               </div>
-              <h2 className="mt-6 font-[var(--font-display)] text-4xl tracking-[0.1em] text-[var(--foreground)]">
+              <h2 className="mt-6 font-[var(--font-display)] text-3xl tracking-[0.1em] text-[var(--foreground)] sm:text-4xl">
                 Neon Rooftop Jam
               </h2>
               <p className="mt-2 text-sm text-[var(--muted)]">
@@ -116,54 +108,27 @@ export default async function Home() {
                     DJ + lights
                   </span>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2" id="rsvp">
-                  <button className="rounded-xl border border-[var(--deep)]/30 bg-[var(--deep)] px-4 py-3 text-sm font-semibold text-black shadow-sm">
-                    Count me in
-                  </button>
-                  <button className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-[var(--foreground)]">
-                    Maybe next time
-                  </button>
-                </div>
-                <div className="grid gap-3">
-                  <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                    Guest name
-                  </label>
-                  <input
-                    className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm text-[var(--foreground)] shadow-sm outline-none focus:border-[var(--accent)]"
-                    placeholder="Jordan Rivera"
-                  />
-                  <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                    Message to hosts
-                  </label>
-                  <textarea
-                    className="min-h-[100px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-[var(--foreground)] shadow-sm outline-none focus:border-[var(--accent)]"
-                    placeholder="Bring two friends? Playlist requests?"
-                  />
-                </div>
-                <button className="rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-black shadow-md shadow-[var(--accent)]/40">
-                  Send RSVP
-                </button>
               </div>
               <p className="mt-4 text-xs text-[var(--muted)]">
-                Share open RSVP links or send personal invites with unique codes.
+                RSVP form and guest fields render inside <span className="font-semibold">#response</span>.
               </p>
             </div>
           </div>
         </section>
 
-        <section className="mt-16 grid gap-6 md:grid-cols-3" id="templates">
+        <section className="mt-16 grid gap-6 md:grid-cols-3" id="how">
           {[
             {
-              title: "Color punch themes",
-              text: "Pick a neon, pastel, or glow theme and swap palettes instantly.",
+              title: "Bring your HTML",
+              text: "Point draft and live URLs at any hosted HTML template. We sanitize and inject data.",
             },
             {
-              title: "Fast RSVP flows",
-              text: "One tap yes, one tap no, plus space for the fun details.",
+              title: "Guest-specific links",
+              text: "Each guest group gets a unique URL with their name and counts prefilled.",
             },
             {
-              title: "Live guest intel",
-              text: "Track totals, follow-ups, and last-minute changes in real time.",
+              title: "Open RSVP link",
+              text: "Share a general link that lets guests add their own details before responding.",
             },
           ].map((card) => (
             <div
@@ -185,13 +150,12 @@ export default async function Home() {
             <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
               Built for co-hosts
             </p>
-            <h2 className="mt-3 font-[var(--font-display)] text-3xl tracking-[0.12em] text-[var(--foreground)]">
+            <h2 className="mt-3 font-[var(--font-display)] text-2xl tracking-[0.12em] text-[var(--foreground)] sm:text-3xl">
               Plan together. Party harder.
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-[var(--muted)]">
-              Loop in your co-hosts, assign follow-ups, and keep guest notes in
-              one place. Everyone gets the same updates, without the group text
-              chaos.
+              Add hosts who can edit invitation details, manage guest lists, and
+              publish updates without forwarding group texts.
             </p>
           </div>
           <div className="grid gap-4">

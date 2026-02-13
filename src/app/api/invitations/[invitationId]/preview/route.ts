@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import { users } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
+import { formatDate, formatTime } from "@/lib/date-format";
 import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
 
 export const runtime = "nodejs";
@@ -36,6 +37,7 @@ export async function GET(
       id: invitations.id,
       title: invitations.title,
       templateUrlDraft: invitations.templateUrlDraft,
+      openRsvpToken: invitations.openRsvpToken,
     })
     .from(invitations)
     .innerJoin(
@@ -77,19 +79,42 @@ export async function GET(
 
   const html = await fetchTemplate(templateUrlDraft);
   const sanitized = sanitizeTemplate(html);
+  const dateValue =
+    details[0]?.eventDate ??
+    details[0]?.date ??
+    null;
+  const timeValue =
+    details[0]?.eventTime ??
+    details[0]?.time ??
+    null;
+  const formattedDate = formatDate(
+    dateValue,
+    (details[0]?.dateFormat ?? "MMM d, yyyy") as
+      | "MMM d, yyyy"
+      | "MMMM d, yyyy"
+      | "EEE, MMM d"
+      | "yyyy-MM-dd"
+  );
+  const formattedTime = formatTime(
+    timeValue,
+    (details[0]?.timeFormat ?? "h:mm a") as "h:mm a" | "h a" | "HH:mm"
+  );
+
   const injected = injectTemplateData(sanitized, {
     title: record.title,
-    date: details[0]?.date ?? null,
-    time: details[0]?.time ?? null,
+    date: formattedDate,
+    time: formattedTime,
     locationName: details[0]?.locationName ?? null,
     address: details[0]?.address ?? null,
     mapLink: details[0]?.mapLink ?? null,
+    mapEmbed: details[0]?.mapEmbed ?? null,
     notes: details[0]?.notes ?? null,
     hostNames: hostNames
       .map((host) => host.name)
       .filter(Boolean)
       .join(" + "),
     rsvpOptions: options,
+    calendarLink: record.openRsvpToken ? `/api/calendar/${record.openRsvpToken}` : null,
   });
 
   return new NextResponse(injected, {

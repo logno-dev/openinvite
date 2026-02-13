@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { guestGroups, invitationHosts } from "@/db/schema";
+import {
+  guestGroups,
+  invitationHosts,
+  invitations,
+  rsvpOptions,
+  rsvpResponses,
+} from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -59,7 +65,54 @@ export async function GET(
     .where(eq(guestGroups.invitationId, invitationId))
     .orderBy(guestGroups.createdAt);
 
-  return NextResponse.json({ guestGroups: groups });
+  const responseRows = await db
+    .select({
+      groupId: rsvpResponses.groupId,
+      optionKey: rsvpResponses.optionKey,
+      adults: rsvpResponses.adults,
+      kids: rsvpResponses.kids,
+      total: rsvpResponses.total,
+      updatedAt: rsvpResponses.updatedAt,
+    })
+    .from(rsvpResponses)
+    .innerJoin(guestGroups, eq(guestGroups.id, rsvpResponses.groupId))
+    .where(eq(guestGroups.invitationId, invitationId));
+
+  const responseByGroup = new Map(
+    responseRows.map((row) => [
+      row.groupId,
+      {
+        optionKey: row.optionKey,
+        adults: row.adults,
+        kids: row.kids,
+        total: row.total,
+        updatedAt: row.updatedAt,
+      },
+    ])
+  );
+
+  const enriched = groups.map((group) => ({
+    ...group,
+    response: responseByGroup.get(group.id) ?? null,
+  }));
+
+  const invitation = await db
+    .select({ countMode: invitations.countMode, openRsvpToken: invitations.openRsvpToken })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId))
+    .limit(1);
+
+  const options = await db
+    .select({ key: rsvpOptions.key, label: rsvpOptions.label })
+    .from(rsvpOptions)
+    .where(eq(rsvpOptions.invitationId, invitationId));
+
+  return NextResponse.json({
+    guestGroups: enriched,
+    countMode: invitation[0]?.countMode ?? "split",
+    rsvpOptions: options,
+    openRsvpToken: invitation[0]?.openRsvpToken ?? null,
+  });
 }
 
 export async function POST(
