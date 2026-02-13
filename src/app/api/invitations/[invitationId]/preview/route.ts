@@ -120,7 +120,7 @@ export async function GET(
   return new NextResponse(injected, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy": "default-src 'none'; img-src https: data:; style-src 'unsafe-inline' https:;",
+      "Content-Security-Policy": "default-src 'none'; img-src https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com https:; font-src https://fonts.gstatic.com https: data:;",
     },
   });
 }

@@ -39,6 +39,7 @@ const allowedTags = [
   "img",
   "iframe",
   "li",
+  "link",
   "main",
   "meta",
   "ol",
@@ -54,6 +55,7 @@ const allowedAttributes = {
   "*": ["class", "id", "style"],
   a: ["href", "target", "rel", "class", "id", "style"],
   img: ["src", "alt", "class", "id", "style"],
+  link: ["href", "rel", "as", "type", "crossorigin"],
   iframe: [
     "src",
     "title",
@@ -180,6 +182,7 @@ export function sanitizeTemplate(html: string) {
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesByTag: {
       iframe: ["https"],
+      link: ["https"],
     },
     disallowedTagsMode: "discard",
   });
