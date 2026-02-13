@@ -28,6 +28,7 @@ type CreateInvitationPayload = {
   eventTime?: string;
   dateFormat?: string;
   timeFormat?: string;
+  skipDraftValidation?: boolean;
   rsvpOptions?: Array<{ key: string; label: string }>;
 };
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
   const liveUrl = body.templateUrlLive?.trim() || null;
 
   try {
-    if (draftUrl) {
+    if (draftUrl && !body.skipDraftValidation) {
       await assertTemplateUrl(draftUrl, "Draft");
     }
     if (liveUrl) {

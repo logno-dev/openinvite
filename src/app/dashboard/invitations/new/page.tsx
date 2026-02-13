@@ -19,6 +19,7 @@ type InvitationForm = {
   notes: string;
   timezone: string;
   countMode: "split" | "total";
+  skipDraftValidation: boolean;
   rsvpYes: string;
   rsvpNo: string;
   rsvpMaybe: string;
@@ -42,6 +43,7 @@ export default function NewInvitationPage() {
     notes: "",
     timezone: "UTC",
     countMode: "split",
+    skipDraftValidation: false,
     rsvpYes: "We will be there",
     rsvpNo: "No thank you",
     rsvpMaybe: "Maybe",
@@ -80,6 +82,7 @@ export default function NewInvitationPage() {
         notes: form.notes,
         timezone: form.timezone,
         countMode: form.countMode,
+        skipDraftValidation: form.skipDraftValidation,
         rsvpOptions: [
           { key: "yes", label: form.rsvpYes },
           { key: "no", label: form.rsvpNo },
@@ -329,6 +332,16 @@ export default function NewInvitationPage() {
                 <option value="total">Total guests only</option>
               </select>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={form.skipDraftValidation}
+              onChange={(event) => updateField("skipDraftValidation", event.target.checked)}
+            />
+            <span className="text-sm text-[var(--muted)]">
+              Skip draft URL validation
+            </span>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
