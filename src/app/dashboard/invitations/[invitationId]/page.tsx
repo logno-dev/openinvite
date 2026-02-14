@@ -62,6 +62,22 @@ type InvitationResponse = {
     notes3: string | null;
   } | null;
   rsvpOptions: Array<{ key: string; label: string }>;
+  hosts: Array<{
+    id: string;
+    userId: string;
+    role: string;
+    canEdit: boolean;
+    notifyOnRsvp: boolean;
+    displayName: string | null;
+    email: string;
+  }>;
+};
+
+type HostNotification = {
+  id: string;
+  displayName: string | null;
+  email: string;
+  notifyOnRsvp: boolean;
 };
 
 export default function EditInvitationPage() {
@@ -74,6 +90,7 @@ export default function EditInvitationPage() {
   const [hostInviteCopyState, setHostInviteCopyState] = useState<
     "idle" | "copied" | "error"
   >("idle");
+  const [hostNotifications, setHostNotifications] = useState<HostNotification[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -123,6 +140,14 @@ export default function EditInvitationPage() {
         previewToken: data.invitation.previewToken,
         openRsvpToken: data.invitation.openRsvpToken,
       });
+      setHostNotifications(
+        (data.hosts ?? []).map((host) => ({
+          id: host.id,
+          displayName: host.displayName,
+          email: host.email,
+          notifyOnRsvp: host.notifyOnRsvp,
+        }))
+      );
 
     }
 
@@ -214,6 +239,26 @@ export default function EditInvitationPage() {
       setHostInviteCopyState("error");
       setTimeout(() => setHostInviteCopyState("idle"), 1500);
     }
+  }
+
+  async function toggleHostNotification(hostId: string, nextValue: boolean) {
+    const response = await fetch(
+      `/api/invitations/${invitationId}/hosts/${hostId}/notifications`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notifyOnRsvp: nextValue }),
+      }
+    );
+    if (!response.ok) {
+      setMessage("Failed to update host notifications");
+      return;
+    }
+    setHostNotifications((prev) =>
+      prev.map((host) =>
+        host.id === hostId ? { ...host, notifyOnRsvp: nextValue } : host
+      )
+    );
   }
 
 
@@ -545,6 +590,33 @@ export default function EditInvitationPage() {
             ) : null}
             {message ? <span className="text-sm text-[var(--muted)]">{message}</span> : null}
           </div>
+          <section className="mt-2 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
+              Host RSVP notifications
+            </p>
+            {hostNotifications.map((host) => (
+              <div
+                key={host.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"
+              >
+                <div className="text-sm">
+                  <p className="text-[var(--foreground)]">
+                    {host.displayName || host.email}
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">{host.email}</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={host.notifyOnRsvp}
+                  className="oi-toggle"
+                  onClick={() => toggleHostNotification(host.id, !host.notifyOnRsvp)}
+                >
+                  <span className="oi-toggle-thumb" />
+                </button>
+              </div>
+            ))}
+          </section>
           {hostInviteLink ? (
             <button
               className={`flex w-full flex-wrap items-center gap-2 rounded-2xl border p-4 text-left text-sm transition ${

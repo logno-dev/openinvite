@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
     userId: user.id,
     role: "owner",
     canEdit: true,
+    notifyOnRsvp: true,
   });
 
   await db.insert(invitationDetails).values({

@@ -14,6 +14,8 @@ type GuestGroup = {
   expectedKids: number;
   expectedTotal: number;
   openCount: boolean;
+  inviteEmailSentAt?: string | null;
+  inviteEmailLastType?: string | null;
   token: string;
   response?: {
     optionKey: string;
@@ -46,6 +48,7 @@ export default function GuestListPage() {
     expectedAdults: "0",
     expectedKids: "0",
     expectedTotal: "0",
+    openCount: false,
   });
   const [responseForm, setResponseForm] = useState({
     optionKey: "",
@@ -68,6 +71,8 @@ export default function GuestListPage() {
   const [emailSendState, setEmailSendState] = useState<
     Record<string, "idle" | "sending" | "sent" | "error">
   >({});
+  const [bulkSendLoading, setBulkSendLoading] = useState(false);
+  const [bulkSendIncludeSent, setBulkSendIncludeSent] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -175,6 +180,7 @@ export default function GuestListPage() {
       expectedAdults: String(group.expectedAdults),
       expectedKids: String(group.expectedKids),
       expectedTotal: String(group.expectedTotal),
+      openCount: group.openCount,
     });
     setResponseForm({
       optionKey: group.response?.optionKey ?? "",
@@ -201,6 +207,7 @@ export default function GuestListPage() {
             countMode === "total"
               ? Number(editForm.expectedTotal)
               : Number(editForm.expectedAdults) + Number(editForm.expectedKids),
+          openCount: editForm.openCount,
         }),
       }
     );
@@ -226,6 +233,7 @@ export default function GuestListPage() {
                 countMode === "total"
                   ? Number(editForm.expectedTotal)
                   : Number(editForm.expectedAdults) + Number(editForm.expectedKids),
+              openCount: editForm.openCount,
             }
           : group
       )
@@ -322,7 +330,7 @@ export default function GuestListPage() {
 
     setEmailSendState((prev) => ({ ...prev, [group.id]: "sending" }));
     const response = await fetch(
-      `/api/invitations/${invitationId}/guest-groups/${group.id}/send`,
+      `/api/invitations/${invitationId}/guest-groups/${group.id}/send?mode=invite`,
       { method: "POST" }
     );
     const contentType = response.headers.get("content-type") ?? "";
@@ -338,10 +346,66 @@ export default function GuestListPage() {
     }
 
     setEmailSendState((prev) => ({ ...prev, [group.id]: "sent" }));
+    setGuestGroups((prev) =>
+      prev.map((item) =>
+        item.id === group.id
+          ? {
+              ...item,
+              inviteEmailSentAt: new Date().toISOString(),
+              inviteEmailLastType: "invite",
+            }
+          : item
+      )
+    );
     setTimeout(
       () => setEmailSendState((prev) => ({ ...prev, [group.id]: "idle" })),
       1800
     );
+  }
+
+  async function sendAllEmails(mode: "invite" | "update") {
+    setBulkSendLoading(true);
+    setGuestMessage("");
+    const response = await fetch(`/api/invitations/${invitationId}/guest-groups/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ includeAlreadySent: bulkSendIncludeSent, mode }),
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    const data = contentType.includes("application/json") ? await response.json() : {};
+    if (!response.ok) {
+      setGuestMessage(data.error ?? "Failed to send emails");
+      setBulkSendLoading(false);
+      return;
+    }
+    const now = new Date().toISOString();
+    if (bulkSendIncludeSent || mode === "update") {
+      setGuestGroups((prev) =>
+        prev.map((group) =>
+          group.email
+            ? {
+                ...group,
+                inviteEmailSentAt: now,
+                inviteEmailLastType: mode,
+              }
+            : group
+        )
+      );
+    } else {
+      setGuestGroups((prev) =>
+        prev.map((group) =>
+          group.email && !group.inviteEmailSentAt
+            ? {
+                ...group,
+                inviteEmailSentAt: now,
+                inviteEmailLastType: mode,
+              }
+            : group
+        )
+      );
+    }
+    setGuestMessage(`Sent ${data.sentCount ?? 0} email${data.sentCount === 1 ? "" : "s"}.`);
+    setBulkSendLoading(false);
   }
 
   return (
@@ -460,6 +524,34 @@ export default function GuestListPage() {
                 </span>
               </div>
             ) : null}
+            <button
+              className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+              type="button"
+              disabled={bulkSendLoading}
+              onClick={() => sendAllEmails("invite")}
+            >
+              {bulkSendLoading ? "Sending..." : "Send all invites"}
+            </button>
+            <button
+              className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+              type="button"
+              disabled={bulkSendLoading}
+              onClick={() => sendAllEmails("update")}
+            >
+              {bulkSendLoading ? "Sending..." : "Send update"}
+            </button>
+            <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs text-[var(--muted)]">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={bulkSendIncludeSent}
+                className="oi-toggle"
+                onClick={() => setBulkSendIncludeSent((prev) => !prev)}
+              >
+                <span className="oi-toggle-thumb" />
+              </button>
+              <span>Include previously emailed guests</span>
+            </div>
           </div>
 
           <form onSubmit={handleGuestSubmit} className="grid gap-4 md:grid-cols-2">
@@ -700,6 +792,13 @@ export default function GuestListPage() {
                   ) : (
                     <span>Total: {group.expectedTotal}</span>
                   )}
+                  <span>
+                    Email status: {group.inviteEmailSentAt ? "Sent" : "Not sent"}
+                    {group.inviteEmailLastType ? ` (${group.inviteEmailLastType})` : ""}
+                    {group.inviteEmailSentAt
+                      ? ` at ${new Date(group.inviteEmailSentAt).toLocaleString()}`
+                      : ""}
+                  </span>
                 </div>
                 <div className="mt-3 text-xs text-[var(--muted)]">
                   {group.response ? (
@@ -820,6 +919,21 @@ export default function GuestListPage() {
                           />
                         </div>
                       )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+                      <span className="text-sm text-[var(--muted)]">Allow open count</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={editForm.openCount}
+                        onClick={() =>
+                          setEditForm((prev) => ({ ...prev, openCount: !prev.openCount }))
+                        }
+                        className="oi-toggle"
+                      >
+                        <span className="oi-toggle-thumb" />
+                      </button>
                     </div>
 
                     <div className="flex items-center gap-3">

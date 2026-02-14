@@ -6,6 +6,10 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   displayName: text("display_name"),
+  phone: text("phone"),
+  shareEmailWithGuests: integer("share_email_with_guests", { mode: "boolean" })
+    .notNull()
+    .default(sql`(0)`),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
@@ -103,6 +107,9 @@ export const invitationHosts = sqliteTable("invitation_hosts", {
     .references(() => users.id, { onDelete: "cascade" }),
   role: text("role").notNull().default("host"),
   canEdit: integer("can_edit", { mode: "boolean" }).notNull().default(true),
+  notifyOnRsvp: integer("notify_on_rsvp", { mode: "boolean" })
+    .notNull()
+    .default(sql`(1)`),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
@@ -150,6 +157,8 @@ export const guestGroups = sqliteTable("guest_groups", {
   respondentUserId: text("respondent_user_id").references(() => users.id, {
     onDelete: "set null",
   }),
+  inviteEmailSentAt: integer("invite_email_sent_at", { mode: "timestamp" }),
+  inviteEmailLastType: text("invite_email_last_type"),
   notes: text("notes"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

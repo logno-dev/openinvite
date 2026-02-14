@@ -7,6 +7,7 @@ import {
   invitations,
   rsvpOptions,
   rsvpResponses,
+  users,
 } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 
@@ -66,8 +67,14 @@ export async function GET(
   if ("error" in access) return access.error;
 
   const groups = await db
-    .select({ id: guestGroups.id, displayName: guestGroups.displayName })
+    .select({
+      id: guestGroups.id,
+      displayName: guestGroups.displayName,
+      email: users.email,
+      shareEmailWithGuests: users.shareEmailWithGuests,
+    })
     .from(guestGroups)
+    .leftJoin(users, eq(users.id, guestGroups.respondentUserId))
     .where(eq(guestGroups.invitationId, access.invitationId));
   const groupIds = groups.map((group) => group.id);
 
@@ -109,6 +116,7 @@ export async function GET(
       return {
         groupId: group.id,
         displayName: group.displayName,
+        sharedEmail: group.shareEmailWithGuests ? group.email : null,
         optionKey: response.optionKey,
         optionLabel: optionLabelByKey.get(response.optionKey) ?? response.optionKey,
         adults: response.adults,

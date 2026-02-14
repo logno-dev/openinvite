@@ -58,6 +58,8 @@ export async function GET(
       expectedKids: guestGroups.expectedKids,
       expectedTotal: guestGroups.expectedTotal,
       openCount: guestGroups.openCount,
+      inviteEmailSentAt: guestGroups.inviteEmailSentAt,
+      inviteEmailLastType: guestGroups.inviteEmailLastType,
       token: guestGroups.token,
       createdAt: guestGroups.createdAt,
     })
@@ -198,6 +200,8 @@ export async function POST(
     expectedKids,
     expectedTotal,
     openCount: isOpenCount,
+    inviteEmailSentAt: null,
+    inviteEmailLastType: null,
     notes: body.notes?.trim() || null,
   });
 

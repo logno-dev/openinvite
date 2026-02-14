@@ -8,6 +8,7 @@ import { dashboardNavLinks } from "@/lib/nav-links";
 type GuestListItem = {
   groupId: string;
   displayName: string;
+  sharedEmail: string | null;
   optionKey: string;
   optionLabel: string;
   adults: number;
@@ -137,6 +138,9 @@ export default function InvitationGuestListPage() {
                 className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-sm"
               >
                 <p className="font-semibold text-[var(--foreground)]">{guest.displayName}</p>
+                {guest.sharedEmail ? (
+                  <p className="text-xs text-[var(--muted)]">{guest.sharedEmail}</p>
+                ) : null}
                 <p className="text-[var(--muted)]">
                   RSVP: {guest.optionLabel}
                   {data.countMode === "split"

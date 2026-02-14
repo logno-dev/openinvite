@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { guestGroups, invitationHosts } from "@/db/schema";
+import { guestGroups, invitationHosts, invitations } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -64,6 +64,33 @@ export async function PATCH(
   }
   if (body.openCount !== undefined) {
     update.openCount = body.openCount;
+  }
+
+  if (update.openCount) {
+    const invitation = await db
+      .select({ countMode: invitations.countMode })
+      .from(invitations)
+      .where(eq(invitations.id, invitationId))
+      .limit(1);
+    if (invitation.length === 0) {
+      return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+    }
+
+    const adults = update.expectedAdults ?? 0;
+    const kids = update.expectedKids ?? 0;
+    const total = update.expectedTotal ?? adults + kids;
+    const hasMinimum = invitation[0].countMode === "total" ? total >= 1 : adults + kids >= 1;
+    if (!hasMinimum) {
+      return NextResponse.json(
+        {
+          error:
+            invitation[0].countMode === "total"
+              ? "Open count requires expected total of at least 1"
+              : "Open count requires at least 1 adult or child",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   if (Object.keys(update).length === 0) {

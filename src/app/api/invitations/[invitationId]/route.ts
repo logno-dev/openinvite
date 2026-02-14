@@ -6,6 +6,7 @@ import {
   invitationHosts,
   invitations,
   rsvpOptions,
+  users,
 } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 
@@ -244,10 +245,25 @@ export async function GET(
       .from(rsvpOptions)
       .where(eq(rsvpOptions.invitationId, invitationId));
 
+    const hosts = await db
+      .select({
+        id: invitationHosts.id,
+        userId: invitationHosts.userId,
+        role: invitationHosts.role,
+        canEdit: invitationHosts.canEdit,
+        notifyOnRsvp: invitationHosts.notifyOnRsvp,
+        displayName: users.displayName,
+        email: users.email,
+      })
+      .from(invitationHosts)
+      .innerJoin(users, eq(users.id, invitationHosts.userId))
+      .where(eq(invitationHosts.invitationId, invitationId));
+
     return NextResponse.json({
       invitation: invitation[0],
       details: details[0] ?? null,
       rsvpOptions: options,
+      hosts,
     });
   } catch (error) {
     console.error("Invitation GET failed", error);

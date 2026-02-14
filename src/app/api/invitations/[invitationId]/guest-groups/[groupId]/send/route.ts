@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { guestGroups, invitationDetails, invitationHosts, invitations } from "@/db/schema";
-import { formatDate, formatTime } from "@/lib/date-format";
-import { getAppUrl, isMailerConfigured, sendMail } from "@/lib/mailer";
+import { buildInvitationEmail } from "@/lib/invitation-email";
+import { isMailerConfigured, sendMail } from "@/lib/mailer";
 import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -12,6 +12,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ invitationId: string; groupId: string }> }
 ) {
+  const mode = request.nextUrl.searchParams.get("mode") === "update" ? "update" : "invite";
   const { invitationId, groupId } = await params;
   const user = await getSessionUser(request);
   if (!user) {
@@ -47,6 +48,7 @@ export async function POST(
       dateFormat: invitationDetails.dateFormat,
       timeFormat: invitationDetails.timeFormat,
       locationName: invitationDetails.locationName,
+      address: invitationDetails.address,
     })
     .from(invitations)
     .leftJoin(invitationDetails, eq(invitationDetails.invitationId, invitations.id))
@@ -68,28 +70,39 @@ export async function POST(
     return NextResponse.json({ error: "Guest does not have an email address" }, { status: 400 });
   }
 
-  const dateValue = invitation[0].eventDate ?? invitation[0].date ?? null;
-  const timeValue = invitation[0].eventTime ?? invitation[0].time ?? null;
-  const formattedDate = formatDate(
-    dateValue,
-    (invitation[0].dateFormat ?? "MMM d, yyyy") as
-      | "MMM d, yyyy"
-      | "MMMM d, yyyy"
-      | "EEE, MMM d"
-      | "yyyy-MM-dd"
+  const emailContent = buildInvitationEmail(
+    {
+      title: invitation[0].title,
+      eventDate: invitation[0].eventDate,
+      eventTime: invitation[0].eventTime,
+      date: invitation[0].date,
+      time: invitation[0].time,
+      dateFormat: invitation[0].dateFormat,
+      timeFormat: invitation[0].timeFormat,
+      locationName: invitation[0].locationName,
+      address: invitation[0].address ?? null,
+    },
+    {
+      displayName: group[0].displayName,
+      token: group[0].token,
+    },
+    mode
   );
-  const formattedTime = formatTime(
-    timeValue,
-    (invitation[0].timeFormat ?? "h:mm a") as "h:mm a" | "h a" | "HH:mm"
-  );
-  const invitationUrl = `${getAppUrl()}/i/${group[0].token}`;
 
   await sendMail({
     to: group[0].email,
-    subject: `You're invited: ${invitation[0].title}`,
-    html: `<p>Hi ${group[0].displayName},</p><p>You are invited to <strong>${invitation[0].title}</strong>.</p><p>${formattedDate ?? ""}${formattedTime ? ` at ${formattedTime}` : ""}${invitation[0].locationName ? ` · ${invitation[0].locationName}` : ""}</p><p><a href="${invitationUrl}">Open your invitation and RSVP</a></p>`,
-    text: `Hi ${group[0].displayName},\n\nYou are invited to ${invitation[0].title}.\n${formattedDate ?? ""}${formattedTime ? ` at ${formattedTime}` : ""}${invitation[0].locationName ? ` · ${invitation[0].locationName}` : ""}\n\nOpen your invitation and RSVP: ${invitationUrl}`,
+    subject: emailContent.subject,
+    html: emailContent.html,
+    text: emailContent.text,
   });
+
+  await db
+    .update(guestGroups)
+    .set({
+      inviteEmailSentAt: new Date(),
+      inviteEmailLastType: mode,
+    })
+    .where(eq(guestGroups.id, groupId));
 
   return NextResponse.json({ ok: true });
 }

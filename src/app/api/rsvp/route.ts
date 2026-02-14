@@ -217,7 +217,12 @@ export async function POST(request: Request) {
       .select({ email: users.email })
       .from(invitationHosts)
       .innerJoin(users, eq(users.id, invitationHosts.userId))
-      .where(eq(invitationHosts.invitationId, invitationId));
+      .where(
+        and(
+          eq(invitationHosts.invitationId, invitationId),
+          eq(invitationHosts.notifyOnRsvp, true)
+        )
+      );
 
     const recipientEmails = hostRecipients
       .map((host) => host.email)
