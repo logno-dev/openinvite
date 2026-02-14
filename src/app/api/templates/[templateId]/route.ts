@@ -73,6 +73,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       url: templateGallery.url,
       thumbnailUrl: templateGallery.thumbnailUrl,
       repoUrl: templateGallery.repoUrl,
+      submittedBy: templateGallery.submittedBy,
     })
     .from(templateGallery)
     .where(

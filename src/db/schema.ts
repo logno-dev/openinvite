@@ -59,6 +59,7 @@ export const templateGallery = sqliteTable("template_gallery", {
   url: text("url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   repoUrl: text("repo_url"),
+  submittedBy: text("submitted_by"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

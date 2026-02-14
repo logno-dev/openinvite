@@ -28,6 +28,7 @@ export default async function TemplateGalleryPage() {
       url: templateGallery.url,
       thumbnailUrl: templateGallery.thumbnailUrl,
       repoUrl: templateGallery.repoUrl,
+      submittedBy: templateGallery.submittedBy,
     })
     .from(templateGallery)
     .where(eq(templateGallery.ownerUserId, user.id))
@@ -41,6 +42,7 @@ export default async function TemplateGalleryPage() {
       url: template.url,
       thumbnailUrl: template.thumbnailUrl ?? null,
       repoUrl: template.repoUrl ?? null,
+      submittedBy: template.submittedBy ?? "OpenInvite",
     }));
     await db.insert(templateGallery).values(seeded);
     templates = seeded.map((template) => ({
@@ -49,6 +51,7 @@ export default async function TemplateGalleryPage() {
       url: template.url,
       thumbnailUrl: template.thumbnailUrl ?? null,
       repoUrl: template.repoUrl ?? null,
+      submittedBy: template.submittedBy ?? null,
     }));
   }
 

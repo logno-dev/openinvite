@@ -77,3 +77,35 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ invitationId: string; groupId: string }> }
+) {
+  const { invitationId, groupId } = await params;
+  const user = await getSessionUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allowed = await db
+    .select({ id: invitationHosts.id })
+    .from(invitationHosts)
+    .where(
+      and(
+        eq(invitationHosts.invitationId, invitationId),
+        eq(invitationHosts.userId, user.id)
+      )
+    )
+    .limit(1);
+
+  if (allowed.length === 0) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 401 });
+  }
+
+  await db
+    .delete(guestGroups)
+    .where(and(eq(guestGroups.id, groupId), eq(guestGroups.invitationId, invitationId)));
+
+  return NextResponse.json({ ok: true });
+}

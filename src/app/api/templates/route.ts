@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       url: templateGallery.url,
       thumbnailUrl: templateGallery.thumbnailUrl,
       repoUrl: templateGallery.repoUrl,
+      submittedBy: templateGallery.submittedBy,
     })
     .from(templateGallery)
     .where(eq(templateGallery.ownerUserId, user.id))
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
       url: template.url,
       thumbnailUrl: template.thumbnailUrl ?? null,
       repoUrl: template.repoUrl ?? null,
+      submittedBy: template.submittedBy ?? "OpenInvite",
     }));
     await db.insert(templateGallery).values(seeded);
     templates = seeded.map((template) => ({
@@ -46,6 +48,7 @@ export async function GET(request: NextRequest) {
       url: template.url,
       thumbnailUrl: template.thumbnailUrl ?? null,
       repoUrl: template.repoUrl ?? null,
+      submittedBy: template.submittedBy ?? null,
     }));
   }
 
@@ -73,6 +76,7 @@ export async function POST(request: NextRequest) {
     url,
     thumbnailUrl: body.thumbnailUrl?.trim() || null,
     repoUrl: body.repoUrl?.trim() || null,
+    submittedBy: user.displayName ?? user.email ?? "You",
   };
 
   await db.insert(templateGallery).values(record);
@@ -84,6 +88,7 @@ export async function POST(request: NextRequest) {
       url: record.url,
       thumbnailUrl: record.thumbnailUrl,
       repoUrl: record.repoUrl,
+      submittedBy: record.submittedBy,
     },
   });
 }

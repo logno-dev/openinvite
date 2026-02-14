@@ -263,6 +263,28 @@ export default function GuestListPage() {
     setEditingId(null);
   }
 
+  async function deleteGuest(groupId: string, displayName: string) {
+    const confirmed = window.confirm(`Delete ${displayName} from the guest list?`);
+    if (!confirmed) return;
+    const response = await fetch(
+      `/api/invitations/${invitationId}/guest-groups/${groupId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!response.ok) {
+      setGuestMessage("Failed to delete guest");
+      return;
+    }
+
+    setGuestGroups((prev) => prev.filter((group) => group.id !== groupId));
+    if (editingId === groupId) {
+      setEditingId(null);
+    }
+    setGuestMessage("Guest removed.");
+  }
+
   async function copyToClipboard(value: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -588,6 +610,13 @@ export default function GuestListPage() {
                       onClick={() => startEdit(group)}
                     >
                       Edit
+                    </button>
+                    <button
+                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+                      type="button"
+                      onClick={() => deleteGuest(group.id, group.displayName)}
+                    >
+                      Delete
                     </button>
                   </div>
                 </div>

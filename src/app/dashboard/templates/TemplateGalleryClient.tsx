@@ -167,6 +167,9 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
                 {template.name}
               </h3>
               <p className="break-all text-xs text-[var(--muted)]">{template.url}</p>
+              <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
+                Submitted by {template.submittedBy ?? "You"}
+              </p>
               {template.repoUrl ? (
                 <a
                   className="text-xs uppercase tracking-[0.25em] text-[var(--accent)]"
