@@ -10,8 +10,61 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
-function escapeHtmlWithLineBreaks(value: string) {
-  return escapeHtml(value).replace(/\r\n|\r|\n/g, "<br>");
+function sanitizeMarkdownHref(value: string) {
+  const href = value.trim();
+  if (/^(https?:\/\/|mailto:|\/)/i.test(href)) {
+    return href;
+  }
+  return null;
+}
+
+function renderInlineMarkdown(value: string) {
+  let output = escapeHtml(value);
+  output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label: string, href: string) => {
+    const safeHref = sanitizeMarkdownHref(href);
+    if (!safeHref) return label;
+    return `<a href="${escapeHtml(
+      safeHref
+    )}" target="_blank" rel="noreferrer">${label}</a>`;
+  });
+  output = output.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  output = output.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+  return output;
+}
+
+function renderLimitedMarkdown(value: string) {
+  const lines = value.replace(/\r\n|\r/g, "\n").split("\n");
+  const listItems: string[] = [];
+  let output = "";
+
+  const append = (fragment: string) => {
+    output = output ? `${output}<br>${fragment}` : fragment;
+  };
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    append(`<ul>${listItems.map((item) => `<li>${item}</li>`).join("")}</ul>`);
+    listItems.length = 0;
+  };
+
+  for (const rawLine of lines) {
+    const listMatch = rawLine.match(/^\s*-\s+(.+)$/);
+    if (listMatch) {
+      listItems.push(renderInlineMarkdown(listMatch[1]));
+      continue;
+    }
+
+    flushList();
+    if (!rawLine.trim()) {
+      append("<br>");
+      continue;
+    }
+
+    append(renderInlineMarkdown(rawLine));
+  }
+
+  flushList();
+  return output;
 }
 
 export type PreviewPayload = {
@@ -96,7 +149,7 @@ export function applyPreviewDataToHtml(
       return;
     }
     if (multilineIds.has(id)) {
-      el.innerHTML = escapeHtmlWithLineBreaks(value);
+      el.innerHTML = renderLimitedMarkdown(value);
     } else {
       el.textContent = value;
     }
