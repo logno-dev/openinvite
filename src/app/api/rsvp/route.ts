@@ -2,8 +2,16 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { guestGroups, invitations, rsvpOptions, rsvpResponses } from "@/db/schema";
+import {
+  guestGroups,
+  invitationHosts,
+  invitations,
+  rsvpOptions,
+  rsvpResponses,
+  users,
+} from "@/db/schema";
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
+import { isMailerConfigured, sendMail } from "@/lib/mailer";
 import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -203,6 +211,46 @@ export async function POST(request: Request) {
     message,
     respondedByUserId: null,
   });
+
+  if (isMailerConfigured()) {
+    const hostRecipients = await db
+      .select({ email: users.email })
+      .from(invitationHosts)
+      .innerJoin(users, eq(users.id, invitationHosts.userId))
+      .where(eq(invitationHosts.invitationId, invitationId));
+
+    const recipientEmails = hostRecipients
+      .map((host) => host.email)
+      .filter((email): email is string => Boolean(email));
+
+    if (recipientEmails.length > 0) {
+      const invitationRecord = await db
+        .select({ title: invitations.title })
+        .from(invitations)
+        .where(eq(invitations.id, invitationId))
+        .limit(1);
+
+      const responseOption = await db
+        .select({ label: rsvpOptions.label })
+        .from(rsvpOptions)
+        .where(and(eq(rsvpOptions.invitationId, invitationId), eq(rsvpOptions.key, responseKey)))
+        .limit(1);
+
+      const invitationTitle = invitationRecord[0]?.title ?? "Your invitation";
+      const responseLabel = responseOption[0]?.label ?? responseKey;
+
+      try {
+        await sendMail({
+          to: recipientEmails,
+          subject: `New RSVP: ${invitationTitle}`,
+          html: `<p>${guestDisplayName ?? "A guest"} submitted an RSVP for <strong>${invitationTitle}</strong>.</p><p>Response: ${responseLabel}<br/>Adults: ${adults}<br/>Kids: ${kids}<br/>Total: ${total}</p>`,
+          text: `${guestDisplayName ?? "A guest"} submitted an RSVP for ${invitationTitle}.\n\nResponse: ${responseLabel}\nAdults: ${adults}\nKids: ${kids}\nTotal: ${total}`,
+        });
+      } catch {
+        // RSVP submission should still succeed even if notification fails.
+      }
+    }
+  }
 
   const calendarToken = guestToken ?? openToken ?? "";
   const calendarLink = calendarToken

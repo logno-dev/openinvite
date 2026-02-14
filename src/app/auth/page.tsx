@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type FormState = {
@@ -197,6 +198,9 @@ export default function AuthPage() {
             >
               {loading === "login" ? "Signing in..." : "Sign in"}
             </button>
+            <Link className="text-sm text-[var(--accent)]" href="/auth/forgot-password">
+              Forgot password?
+            </Link>
             {loginMessage ? (
               <p className="text-sm text-[var(--muted)]">{loginMessage}</p>
             ) : null}

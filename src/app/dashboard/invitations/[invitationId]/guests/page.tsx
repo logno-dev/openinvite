@@ -65,6 +65,9 @@ export default function GuestListPage() {
   });
   const [guestMessage, setGuestMessage] = useState("");
   const [guestSaving, setGuestSaving] = useState(false);
+  const [emailSendState, setEmailSendState] = useState<
+    Record<string, "idle" | "sending" | "sent" | "error">
+  >({});
 
   useEffect(() => {
     async function load() {
@@ -309,6 +312,36 @@ export default function GuestListPage() {
     } catch {
       return false;
     }
+  }
+
+  async function sendInviteEmail(group: GuestGroup) {
+    if (!group.email) {
+      setGuestMessage("Add an email address for this guest first.");
+      return;
+    }
+
+    setEmailSendState((prev) => ({ ...prev, [group.id]: "sending" }));
+    const response = await fetch(
+      `/api/invitations/${invitationId}/guest-groups/${group.id}/send`,
+      { method: "POST" }
+    );
+    const contentType = response.headers.get("content-type") ?? "";
+    const data = contentType.includes("application/json") ? await response.json() : {};
+    if (!response.ok) {
+      setEmailSendState((prev) => ({ ...prev, [group.id]: "error" }));
+      setGuestMessage(data.error ?? "Failed to send invitation email");
+      setTimeout(
+        () => setEmailSendState((prev) => ({ ...prev, [group.id]: "idle" })),
+        1800
+      );
+      return;
+    }
+
+    setEmailSendState((prev) => ({ ...prev, [group.id]: "sent" }));
+    setTimeout(
+      () => setEmailSendState((prev) => ({ ...prev, [group.id]: "idle" })),
+      1800
+    );
   }
 
   return (
@@ -623,6 +656,16 @@ export default function GuestListPage() {
                     <button
                       className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
                       type="button"
+                      disabled={!group.email || emailSendState[group.id] === "sending"}
+                      onClick={() => sendInviteEmail(group)}
+                    >
+                      {emailSendState[group.id] === "sending"
+                        ? "Sending..."
+                        : "Send email"}
+                    </button>
+                    <button
+                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+                      type="button"
                       onClick={() => startEdit(group)}
                     >
                       Edit
@@ -634,6 +677,17 @@ export default function GuestListPage() {
                     >
                       Delete
                     </button>
+                    <span
+                      className={`w-14 text-[10px] uppercase tracking-[0.2em] transition ${
+                        (emailSendState[group.id] ?? "idle") === "sent"
+                          ? "text-emerald-300 opacity-100"
+                          : (emailSendState[group.id] ?? "idle") === "error"
+                            ? "text-rose-300 opacity-100"
+                            : "opacity-0"
+                      }`}
+                    >
+                      {(emailSendState[group.id] ?? "idle") === "error" ? "Failed" : "Sent"}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-3 grid gap-2 text-xs text-[var(--muted)] md:grid-cols-3">

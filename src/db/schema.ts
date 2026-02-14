@@ -204,6 +204,19 @@ export const invitationGuestMessages = sqliteTable("invitation_guest_messages", 
     .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
+export const passwordResetTokens = sqliteTable("password_reset_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  usedAt: integer("used_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+});
+
 export const contacts = sqliteTable("contacts", {
   id: text("id").primaryKey(),
   userId: text("user_id")
