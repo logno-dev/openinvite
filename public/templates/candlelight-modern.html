@@ -125,6 +125,78 @@
           grid-template-columns: 1fr;
         }
       }
+
+      .oi-rsvp-form {
+        display: grid;
+        gap: 14px;
+        font-family: "Helvetica Neue", "Arial", sans-serif;
+      }
+
+      .oi-guest-name {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        color: var(--muted);
+      }
+
+      .oi-field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .oi-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.32em;
+        color: var(--muted);
+      }
+
+      .oi-input,
+      .oi-textarea {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 13px;
+        background: transparent;
+        color: var(--ink);
+        font-family: inherit;
+      }
+
+      .oi-textarea {
+        resize: vertical;
+      }
+
+      .oi-rsvp-options {
+        display: grid;
+        gap: 10px;
+      }
+
+      .oi-rsvp-option {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+      }
+
+      .oi-rsvp-label {
+        font-size: 14px;
+      }
+
+      .oi-submit {
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 12px 18px;
+        background: var(--accent);
+        color: #1b1306;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
