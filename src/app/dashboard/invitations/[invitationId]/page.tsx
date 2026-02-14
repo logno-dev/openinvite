@@ -511,14 +511,24 @@ export default function EditInvitationPage() {
             >
               Manage guests
             </a>
-            {form.previewToken && (form.templateUrlDraft || form.templateUrlLive) ? (
+            {form.previewToken && form.templateUrlLive ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-                href={`/preview-client/${form.previewToken}?mode=guest`}
+                href={`/preview-client/${form.previewToken}?mode=guest&source=live`}
                 target="_blank"
                 rel="noreferrer"
               >
-                Open preview
+                Preview live
+              </a>
+            ) : null}
+            {form.previewToken && form.templateUrlDraft ? (
+              <a
+                className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                href={`/preview-client/${form.previewToken}?mode=guest&source=draft`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Preview draft
               </a>
             ) : null}
             <button

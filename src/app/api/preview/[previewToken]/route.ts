@@ -21,6 +21,7 @@ export async function GET(
       id: invitations.id,
       title: invitations.title,
       templateUrlDraft: invitations.templateUrlDraft,
+      templateUrlLive: invitations.templateUrlLive,
       openRsvpToken: invitations.openRsvpToken,
       timezone: invitations.timezone,
       countMode: invitations.countMode,

@@ -9,6 +9,7 @@ export default function PreviewClientPage() {
   const searchParams = useSearchParams();
   const token = typeof params.previewToken === "string" ? params.previewToken : "";
   const mode = (searchParams.get("mode") ?? "open") === "guest" ? "guest" : "open";
+  const source = (searchParams.get("source") ?? "live") === "draft" ? "draft" : "live";
   const [payload, setPayload] = useState<PreviewPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [html, setHtml] = useState<string | null>(null);
@@ -32,9 +33,15 @@ export default function PreviewClientPage() {
     async function render() {
       if (!payload) return;
       const templateUrl =
-        payload.invitation.templateUrlLive ?? payload.invitation.templateUrlDraft;
+        source === "draft"
+          ? payload.invitation.templateUrlDraft
+          : payload.invitation.templateUrlLive;
       if (!templateUrl) {
-        setError("Template URL is missing.");
+        setError(
+          source === "draft"
+            ? "Draft template URL is missing."
+            : "Live template URL is missing."
+        );
         return;
       }
       try {
@@ -53,10 +60,10 @@ export default function PreviewClientPage() {
     }
 
     render();
-  }, [payload, mode]);
+  }, [payload, mode, source]);
 
-  const guestUrl = useMemo(() => `?mode=guest`, []);
-  const openUrl = useMemo(() => `?mode=open`, []);
+  const guestUrl = useMemo(() => `?mode=guest&source=${source}`, [source]);
+  const openUrl = useMemo(() => `?mode=open&source=${source}`, [source]);
 
   return (
     <div className="min-h-screen bg-[#0a0a14] text-[var(--foreground)]">
@@ -64,7 +71,7 @@ export default function PreviewClientPage() {
         <div className="flex items-center gap-2">
           <span className="font-semibold">Client preview</span>
           <span className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-            {mode === "guest" ? "Guest" : "Open"}
+            {mode === "guest" ? "Guest" : "Open"} · {source === "draft" ? "Draft" : "Live"}
           </span>
         </div>
         <div className="flex items-center gap-2">
