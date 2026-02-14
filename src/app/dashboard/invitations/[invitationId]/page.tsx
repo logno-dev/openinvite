@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import TopNav from "@/components/TopNav";
+import { dashboardNavLinks } from "@/lib/nav-links";
 
 type InvitationForm = {
   title: string;
@@ -210,6 +212,7 @@ export default function EditInvitationPage() {
   if (!form) {
     return (
       <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
+        <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
         <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
           <p className="text-sm text-[var(--muted)]">Loading invitation...</p>
         </main>
@@ -219,6 +222,7 @@ export default function EditInvitationPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
+      <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
@@ -231,13 +235,6 @@ export default function EditInvitationPage() {
             Template labels include the div id in parentheses.
           </p>
         </div>
-        <a
-          className="self-start rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-          href="/dashboard"
-        >
-          Back to dashboard
-        </a>
-
         <form
           onSubmit={handleSubmit}
           className="grid gap-6 rounded-3xl border border-white/15 bg-white/5 p-6"

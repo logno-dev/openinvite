@@ -22,17 +22,8 @@ export default async function Home() {
           </span>
         </div>
         <nav className="hidden items-center gap-6 text-sm text-[var(--muted)] md:flex">
-          <a className="transition-colors hover:text-[var(--foreground)]" href="#how">
-            How it works
-          </a>
           <a className="transition-colors hover:text-[var(--foreground)]" href="/docs">
             Docs
-          </a>
-          <a className="transition-colors hover:text-[var(--foreground)]" href="#hosts">
-            Hosts
-          </a>
-          <a className="transition-colors hover:text-[var(--foreground)]" href="#rsvp">
-            RSVP
           </a>
           <a
             className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[var(--foreground)] shadow-sm transition hover:-translate-y-0.5 hover:border-white/40"
@@ -166,22 +157,6 @@ export default async function Home() {
               Add hosts who can edit invitation details, manage guest lists, and
               publish updates without forwarding group texts.
             </p>
-          </div>
-          <div className="grid gap-4">
-            {[
-              "Assign RSVP follow-ups",
-              "Share playlist ideas",
-              "Pin VIP guests",
-              "Track response momentum",
-            ].map((item) => (
-              <div
-                key={item}
-                className="flex items-center justify-between rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-[var(--foreground)]"
-              >
-                <span>{item}</span>
-                <span className="text-xs text-[var(--muted)]">Live</span>
-              </div>
-            ))}
           </div>
         </section>
       </main>

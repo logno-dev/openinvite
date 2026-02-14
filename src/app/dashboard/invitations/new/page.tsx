@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import TopNav from "@/components/TopNav";
+import { dashboardNavLinks } from "@/lib/nav-links";
 
 type InvitationForm = {
   title: string;
@@ -115,6 +117,7 @@ export default function NewInvitationPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
+      <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">

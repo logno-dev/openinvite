@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import TopNav from "@/components/TopNav";
+import { dashboardNavLinks } from "@/lib/nav-links";
 
 type GuestGroup = {
   id: string;
@@ -296,6 +298,7 @@ export default function GuestListPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
+      <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-16">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -306,12 +309,6 @@ export default function GuestListPage() {
               Manage guests
             </h1>
           </div>
-          <a
-            className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-            href={`/dashboard/invitations/${invitationId}`}
-          >
-            Back to invite
-          </a>
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">

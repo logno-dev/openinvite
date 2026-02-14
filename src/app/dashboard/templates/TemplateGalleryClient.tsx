@@ -75,6 +75,10 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
   }
 
   function openForEdit(template: TemplateGalleryItem) {
+    if (editingId === template.id) {
+      resetEditForm();
+      return;
+    }
     setEditingId(template.id);
     setEditForm({
       name: template.name,
@@ -227,12 +231,14 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
             className="flex flex-col gap-4 rounded-3xl border border-white/15 bg-white/5 p-6"
           >
             {template.thumbnailUrl ? (
-              <img
-                className="aspect-[16/9] w-full rounded-2xl border border-white/10 object-cover"
-                src={template.thumbnailUrl}
-                alt={`${template.name} preview`}
-                loading="lazy"
-              />
+              <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/10">
+                <img
+                  className="h-full w-full object-cover"
+                  src={template.thumbnailUrl}
+                  alt={`${template.name} preview`}
+                  loading="lazy"
+                />
+              </div>
             ) : (
               <div className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(140deg,#1a102f_0%,#0b1220_50%,#10132a_100%)] text-xs uppercase tracking-[0.4em] text-[var(--muted)]">
                 No thumbnail

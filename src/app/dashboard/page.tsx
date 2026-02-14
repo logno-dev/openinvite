@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import LogoutButton from "./LogoutButton";
 import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
 import { db } from "@/db/client";
 import { invitationHosts, invitations } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
+import TopNav from "@/components/TopNav";
+import { dashboardNavLinks } from "@/lib/nav-links";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -41,33 +42,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
+      <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
-              Dashboard
-            </p>
-            <h1 className="font-[var(--font-display)] text-3xl tracking-[0.12em] sm:text-4xl lg:text-5xl">
-              Welcome, {user.displayName ?? "Host"}
-            </h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-sm"
-              href="/dashboard/templates"
-            >
-              Template gallery
-            </a>
-            <a
-              className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black"
-              href="/dashboard/invitations/new"
-            >
-              New invite
-            </a>
-            <LogoutButton />
-          </div>
-        </header>
-
         <section className="grid gap-4">
           <div className="flex items-center justify-between">
             <h2 className="font-[var(--font-display)] text-3xl tracking-[0.1em]">

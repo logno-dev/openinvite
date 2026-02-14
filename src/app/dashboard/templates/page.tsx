@@ -7,6 +7,8 @@ import { templateGallery } from "@/db/schema";
 import { defaultTemplateGallery } from "@/lib/template-gallery";
 import { parseStoredTags, serializeTags } from "@/lib/template-tags";
 import { eq, asc } from "drizzle-orm";
+import TopNav from "@/components/TopNav";
+import { dashboardNavLinks } from "@/lib/nav-links";
 
 export default async function TemplateGalleryPage() {
   const cookieStore = await cookies();
@@ -70,6 +72,7 @@ export default async function TemplateGalleryPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
+      <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-16">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -84,12 +87,6 @@ export default async function TemplateGalleryPage() {
               or preview how guest and open RSVP data render.
             </p>
           </div>
-          <a
-            className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-sm"
-            href="/dashboard"
-          >
-            Back to dashboard
-          </a>
         </header>
 
         {templates.length === 0 ? (
