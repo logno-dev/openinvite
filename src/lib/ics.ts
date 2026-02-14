@@ -5,6 +5,8 @@ type IcsInput = {
   locationName: string | null;
   address: string | null;
   notes: string | null;
+  notes2: string | null;
+  notes3: string | null;
   eventDate: string | null;
   eventTime: string | null;
   timezone: string;
@@ -71,6 +73,10 @@ export function buildIcs(input: IcsInput) {
 
   const locationParts = [input.locationName, input.address].filter(Boolean);
   const location = locationParts.length > 0 ? escapeText(locationParts.join(" — ")) : "";
+  const combinedNotes = [input.notes, input.notes2, input.notes3]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .join("\n\n");
 
   return [
     "BEGIN:VCALENDAR",
@@ -83,7 +89,7 @@ export function buildIcs(input: IcsInput) {
     `UID:${input.uid}`,
     `SUMMARY:${escapeText(input.title)}`,
     location ? `LOCATION:${location}` : null,
-    input.notes ? `DESCRIPTION:${escapeText(input.notes)}` : null,
+    combinedNotes ? `DESCRIPTION:${escapeText(combinedNotes)}` : null,
     dtStart,
     dtEnd,
     "END:VEVENT",

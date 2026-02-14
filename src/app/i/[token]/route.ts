@@ -111,6 +111,8 @@ export async function GET(
       mapLink: details[0]?.mapLink ?? null,
       mapEmbed: details[0]?.mapEmbed ?? null,
       notes: details[0]?.notes ?? null,
+      notes2: details[0]?.notes2 ?? null,
+      notes3: details[0]?.notes3 ?? null,
       hostNames: hostNames
         .map((host) => host.name)
         .filter(Boolean)

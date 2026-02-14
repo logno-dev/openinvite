@@ -27,6 +27,8 @@ type PreviewPayload = {
     mapLink: string | null;
     mapEmbed: string | null;
     notes: string | null;
+    notes2: string | null;
+    notes3: string | null;
   } | null;
   hostNames: string[];
   rsvpOptions: Array<{ key: string; label: string }>;
@@ -59,6 +61,8 @@ function applyDataToHtml(html: string, data: PreviewPayload, mode: "guest" | "op
     location: details?.locationName ?? null,
     address: details?.address ?? null,
     notes: details?.notes ?? null,
+    notes_2: details?.notes2 ?? null,
+    notes_3: details?.notes3 ?? null,
     host_names: data.hostNames.join(" + ") || null,
     rsvp_yes_label: data.rsvpOptions.find((opt) => opt.key === "yes")?.label ?? null,
     rsvp_no_label: data.rsvpOptions.find((opt) => opt.key === "no")?.label ?? null,

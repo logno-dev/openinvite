@@ -28,6 +28,8 @@ type UpdateInvitationPayload = {
   mapLink?: string | null;
   mapEmbed?: string | null;
   notes?: string | null;
+  notes2?: string | null;
+  notes3?: string | null;
   rsvpOptions?: Array<{ key: string; label: string }>;
 };
 
@@ -115,7 +117,9 @@ export async function PATCH(
     body.address !== undefined ||
     body.mapLink !== undefined ||
     body.mapEmbed !== undefined ||
-    body.notes !== undefined
+    body.notes !== undefined ||
+    body.notes2 !== undefined ||
+    body.notes3 !== undefined
   ) {
     await db
       .insert(invitationDetails)
@@ -132,6 +136,8 @@ export async function PATCH(
         mapLink: body.mapLink?.trim() || null,
         mapEmbed: body.mapEmbed?.trim() || null,
         notes: body.notes?.trim() || null,
+        notes2: body.notes2?.trim() || null,
+        notes3: body.notes3?.trim() || null,
       })
       .onConflictDoUpdate({
         target: invitationDetails.invitationId,
@@ -147,6 +153,8 @@ export async function PATCH(
           mapLink: body.mapLink?.trim() || null,
           mapEmbed: body.mapEmbed?.trim() || null,
           notes: body.notes?.trim() || null,
+          notes2: body.notes2?.trim() || null,
+          notes3: body.notes3?.trim() || null,
         },
       });
   }

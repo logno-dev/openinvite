@@ -22,6 +22,8 @@ type CreateInvitationPayload = {
   mapLink?: string;
   mapEmbed?: string;
   notes?: string;
+  notes2?: string;
+  notes3?: string;
   timezone?: string;
   countMode?: "split" | "total";
   eventDate?: string;
@@ -104,6 +106,8 @@ export async function POST(request: NextRequest) {
     mapLink: body.mapLink?.trim() || null,
     mapEmbed: body.mapEmbed?.trim() || null,
     notes: body.notes?.trim() || null,
+    notes2: body.notes2?.trim() || null,
+    notes3: body.notes3?.trim() || null,
   });
 
   const options = body.rsvpOptions?.length

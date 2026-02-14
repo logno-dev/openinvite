@@ -63,6 +63,8 @@ export async function GET(
     locationName: details[0]?.locationName ?? null,
     address: details[0]?.address ?? null,
     notes: details[0]?.notes ?? null,
+    notes2: details[0]?.notes2 ?? null,
+    notes3: details[0]?.notes3 ?? null,
     eventDate,
     eventTime,
     timezone: invite[0].timezone,

@@ -29,8 +29,10 @@ export const invitations = sqliteTable("invitations", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  status: text("status").notNull().default("draft"),
   timezone: text("timezone").notNull().default("UTC"),
   countMode: text("count_mode").notNull().default("split"),
+  templateUrl: text("template_url"),
   templateUrlDraft: text("template_url_draft"),
   templateUrlLive: text("template_url_live"),
   openRsvpToken: text("open_rsvp_token")
@@ -64,6 +66,8 @@ export const invitationDetails = sqliteTable("invitation_details", {
   mapLink: text("map_link"),
   mapEmbed: text("map_embed"),
   notes: text("notes"),
+  notes2: text("notes_2"),
+  notes3: text("notes_3"),
 });
 
 export const invitationHosts = sqliteTable("invitation_hosts", {

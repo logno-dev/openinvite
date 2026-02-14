@@ -18,6 +18,8 @@ type InvitationForm = {
   mapLink: string;
   mapEmbed: string;
   notes: string;
+  notes2: string;
+  notes3: string;
   timezone: string;
   countMode: "split" | "total";
   rsvpYes: string;
@@ -50,6 +52,8 @@ type InvitationResponse = {
     mapLink: string | null;
     mapEmbed: string | null;
     notes: string | null;
+    notes2: string | null;
+    notes3: string | null;
   } | null;
   rsvpOptions: Array<{ key: string; label: string }>;
 };
@@ -101,6 +105,8 @@ export default function EditInvitationPage() {
         mapLink: data.details?.mapLink ?? "",
         mapEmbed: data.details?.mapEmbed ?? "",
         notes: data.details?.notes ?? "",
+        notes2: data.details?.notes2 ?? "",
+        notes3: data.details?.notes3 ?? "",
         timezone: data.invitation.timezone,
         countMode: data.invitation.countMode,
         rsvpYes,
@@ -144,6 +150,8 @@ export default function EditInvitationPage() {
         mapLink: form.mapLink,
         mapEmbed: form.mapEmbed,
         notes: form.notes,
+        notes2: form.notes2,
+        notes3: form.notes3,
         timezone: form.timezone,
         countMode: form.countMode,
         rsvpOptions: [
@@ -372,6 +380,28 @@ export default function EditInvitationPage() {
                 value={form.notes}
                 onChange={(event) => updateField("notes", event.target.value)}
                 placeholder="Dress code, parking, or any special notes."
+              />
+            </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Notes section 2 <span className="normal-case">(id: notes_2)</span>
+              </label>
+              <textarea
+                className="min-h-[120px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.notes2}
+                onChange={(event) => updateField("notes2", event.target.value)}
+                placeholder="Additional details or helpful info."
+              />
+            </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Notes section 3 <span className="normal-case">(id: notes_3)</span>
+              </label>
+              <textarea
+                className="min-h-[120px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.notes3}
+                onChange={(event) => updateField("notes3", event.target.value)}
+                placeholder="Last call, reminders, or footer copy."
               />
             </div>
           </div>

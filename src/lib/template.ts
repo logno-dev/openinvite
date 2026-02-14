@@ -9,6 +9,8 @@ export type InvitationTemplateData = {
   mapLink: string | null;
   mapEmbed: string | null;
   notes: string | null;
+  notes2: string | null;
+  notes3: string | null;
   hostNames: string;
   rsvpOptions: Array<{ key: string; label: string }>;
   guestDisplayName?: string | null;
@@ -78,6 +80,8 @@ const placeholderIds = {
   location: "location",
   address: "address",
   notes: "notes",
+  notes2: "notes_2",
+  notes3: "notes_3",
   hostNames: "host_names",
   rsvpYes: "rsvp_yes_label",
   rsvpNo: "rsvp_no_label",
@@ -207,6 +211,12 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
   output = data.notes
     ? setContent(output, placeholderIds.notes, data.notes)
     : removeElementById(output, placeholderIds.notes);
+  output = data.notes2
+    ? setContent(output, placeholderIds.notes2, data.notes2)
+    : removeElementById(output, placeholderIds.notes2);
+  output = data.notes3
+    ? setContent(output, placeholderIds.notes3, data.notes3)
+    : removeElementById(output, placeholderIds.notes3);
   output = data.hostNames
     ? setContent(output, placeholderIds.hostNames, data.hostNames)
     : removeElementById(output, placeholderIds.hostNames);
