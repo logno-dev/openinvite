@@ -12,6 +12,12 @@ type RespondentInvitation = {
   invitationTitle: string;
   countMode: "split" | "total";
   shareGuestList: boolean;
+  eventDate: string | null;
+  eventTime: string | null;
+  locationName: string | null;
+  address: string | null;
+  mapLink: string | null;
+  registryLink: string | null;
   response: {
     optionKey: string;
     optionLabel: string;
@@ -109,6 +115,38 @@ export default function MyInvitationsPage() {
                   ) : null}
                 </div>
                 <div className="mt-3 text-sm text-[var(--muted)]">
+                  {item.eventDate || item.eventTime ? (
+                    <p>
+                      Event: {item.eventDate ?? "Date TBD"}
+                      {item.eventTime ? ` at ${item.eventTime}` : ""}
+                    </p>
+                  ) : null}
+                  {item.locationName ? <p>Location: {item.locationName}</p> : null}
+                  {item.address ? <p>Address: {item.address}</p> : null}
+                  {item.mapLink ? (
+                    <p>
+                      <a
+                        className="text-[var(--accent)]"
+                        href={item.mapLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open map
+                      </a>
+                    </p>
+                  ) : null}
+                  {item.registryLink ? (
+                    <p>
+                      <a
+                        className="text-[var(--accent)]"
+                        href={item.registryLink}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Gift registry
+                      </a>
+                    </p>
+                  ) : null}
                   {item.response ? (
                     item.countMode === "split" ? (
                       <span>
