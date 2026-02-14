@@ -11,9 +11,9 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
 
       <TopNav links={dashboardNavLinks} homeHref="/" />
 
-      <main className="relative mx-auto grid w-full max-w-6xl gap-6 px-6 pb-20 pt-10 lg:grid-cols-[260px_1fr]">
+      <main className="relative mx-auto grid w-full max-w-6xl min-w-0 gap-6 px-6 pb-20 pt-10 lg:grid-cols-[260px_1fr]">
         <DocsSidebar />
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8">
+        <div className="min-w-0 rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8">
           {children}
         </div>
       </main>

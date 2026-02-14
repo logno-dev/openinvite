@@ -58,17 +58,33 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         {children}
       </strong>
     ),
-    code: ({ children, ...props }: ComponentProps<"code">) => (
-      <code
-        className="rounded border border-white/10 bg-white/10 px-1.5 py-0.5 text-[13px] text-[var(--foreground)]"
-        {...props}
-      >
-        {children}
-      </code>
-    ),
+    code: ({ children, ...props }: ComponentProps<"code">) => {
+      const className = typeof props.className === "string" ? props.className : "";
+      const isBlock = className.includes("language-");
+
+      if (isBlock) {
+        return (
+          <code
+            className={`block min-w-0 text-[13px] text-[var(--foreground)] ${className}`}
+            {...props}
+          >
+            {children}
+          </code>
+        );
+      }
+
+      return (
+        <code
+          className="rounded border border-white/10 bg-white/10 px-1.5 py-0.5 text-[13px] text-[var(--foreground)]"
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    },
     pre: ({ children, ...props }: ComponentProps<"pre">) => (
       <pre
-        className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-[var(--foreground)]"
+        className="mt-4 w-full max-w-full min-w-0 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-[var(--foreground)] [-webkit-overflow-scrolling:touch]"
         {...props}
       >
         {children}
