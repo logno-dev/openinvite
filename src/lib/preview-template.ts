@@ -1,6 +1,15 @@
 import { renderRsvpForm } from "@/lib/rsvp";
 import { formatDate, formatTime } from "@/lib/date-format";
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export type PreviewPayload = {
   invitation: {
     id: string;
@@ -21,6 +30,7 @@ export type PreviewPayload = {
     locationName: string | null;
     address: string | null;
     mapLink: string | null;
+    registryLink: string | null;
     mapEmbed: string | null;
     notes: string | null;
     notes2: string | null;
@@ -96,6 +106,15 @@ export function applyPreviewDataToHtml(
       }
     } else {
       mapEl.remove();
+    }
+  }
+
+  const registryEl = doc.getElementById("registry_link");
+  if (registryEl) {
+    if (details?.registryLink) {
+      registryEl.innerHTML = `<a href="${escapeHtml(details.registryLink)}">Gift Registry</a>`;
+    } else {
+      registryEl.remove();
     }
   }
 

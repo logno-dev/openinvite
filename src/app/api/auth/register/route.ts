@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
+import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
 import { createSession, setSessionCookie } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -11,6 +12,7 @@ type RegisterPayload = {
   email?: string;
   password?: string;
   displayName?: string;
+  claimGuestToken?: string;
 };
 
 function isValidEmail(value: string) {
@@ -22,6 +24,7 @@ export async function POST(request: Request) {
   const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password ?? "";
   const displayName = body.displayName?.trim() || null;
+  const claimGuestToken = body.claimGuestToken?.trim() || null;
 
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password required" }, { status: 400 });
@@ -58,6 +61,12 @@ export async function POST(request: Request) {
     passwordHash,
     displayName,
   });
+
+  if (claimGuestToken) {
+    await linkGuestGroupToUserByToken(id, claimGuestToken, {
+      allowMergeWithExisting: true,
+    });
+  }
 
   const { token, expiresAt } = await createSession(id);
   const response = NextResponse.json({

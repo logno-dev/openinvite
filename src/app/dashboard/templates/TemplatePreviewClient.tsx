@@ -35,6 +35,7 @@ export default function TemplatePreviewClient({ templateUrl }: TemplatePreviewCl
         locationName: "Rooftop Conservatory",
         address: "44 Harbor Ave, Seattle",
         mapLink: "https://maps.google.com",
+        registryLink: "https://registry.example.com/lena-marco",
         mapEmbed: null,
         notes: "Cocktail attire recommended.",
         notes2: "Doors open 30 minutes early.",

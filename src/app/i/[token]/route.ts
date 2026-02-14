@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
@@ -11,8 +12,10 @@ import {
   users,
 } from "@/db/schema";
 import { formatDate, formatTime } from "@/lib/date-format";
+import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
 import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
 import { renderRsvpForm } from "@/lib/rsvp";
+import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -29,6 +32,15 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get(SESSION_COOKIE)?.value ?? null;
+  const sessionUser = sessionToken
+    ? await getSessionUserByToken(sessionToken)
+    : null;
+  if (sessionUser) {
+    await linkGuestGroupToUserByToken(sessionUser.id, token);
+  }
+
   const group = await db
     .select({
       id: guestGroups.id,

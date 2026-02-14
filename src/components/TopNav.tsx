@@ -35,15 +35,24 @@ export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProp
         <nav className="hidden items-center gap-3 md:flex">
           {links.map((link) => {
             const active = pathname === link.href;
+            const isPrimaryAction = link.href === "/dashboard/invitations/new";
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-xs uppercase tracking-[0.22em] transition ${
-                  active
-                    ? "text-[var(--foreground)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
+                className={
+                  isPrimaryAction
+                    ? `rounded-full border px-3 py-2 text-xs uppercase tracking-[0.18em] transition ${
+                        active
+                          ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                          : "border-[var(--accent)]/70 bg-[var(--accent)]/20 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black"
+                      }`
+                    : `text-xs uppercase tracking-[0.22em] transition ${
+                        active
+                          ? "text-[var(--foreground)]"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                      }`
+                }
               >
                 {link.label}
               </Link>
@@ -83,15 +92,24 @@ export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProp
           <div className="flex flex-col gap-2">
             {links.map((link) => {
               const active = pathname === link.href;
+              const isPrimaryAction = link.href === "/dashboard/invitations/new";
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-xs uppercase tracking-[0.22em] ${
-                    active
-                      ? "text-[var(--foreground)]"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                  }`}
+                  className={
+                    isPrimaryAction
+                      ? `rounded-full border px-3 py-2 text-xs uppercase tracking-[0.18em] ${
+                          active
+                            ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                            : "border-[var(--accent)]/70 bg-[var(--accent)]/20 text-[var(--accent)]"
+                        }`
+                      : `text-xs uppercase tracking-[0.22em] ${
+                          active
+                            ? "text-[var(--foreground)]"
+                            : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                        }`
+                  }
                   onClick={() => setOpen(false)}
                 >
                   {link.label}

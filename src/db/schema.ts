@@ -144,6 +144,9 @@ export const guestGroups = sqliteTable("guest_groups", {
   expectedKids: integer("expected_kids").notNull().default(0),
   expectedTotal: integer("expected_total").notNull().default(0),
   openCount: integer("open_count", { mode: "boolean" }).notNull().default(false),
+  respondentUserId: text("respondent_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   notes: text("notes"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

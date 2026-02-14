@@ -12,7 +12,9 @@ type FormState = {
 export default function AuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/dashboard";
+  const claimGuestToken = searchParams.get("claimGuestToken") || "";
+  const nextPath =
+    searchParams.get("next") || (claimGuestToken ? "/my-invitations" : "/dashboard");
   const [registerState, setRegisterState] = useState<FormState>({
     email: "",
     password: "",
@@ -34,7 +36,7 @@ export default function AuthPage() {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(registerState),
+      body: JSON.stringify({ ...registerState, claimGuestToken }),
     });
 
     const data = await response.json();
@@ -54,7 +56,7 @@ export default function AuthPage() {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(loginState),
+      body: JSON.stringify({ ...loginState, claimGuestToken }),
     });
 
     const data = await response.json();
@@ -77,8 +79,9 @@ export default function AuthPage() {
             Start the party.
           </h1>
           <p className="max-w-xl text-base text-[var(--muted)]">
-            Create an account to launch a new invite or sign in to manage
-            existing guest lists.
+            {claimGuestToken
+              ? "Sign in or create an account to manage this invitation and any future invites sent to you."
+              : "Create an account to launch a new invite or sign in to manage existing guest lists."}
           </p>
         </div>
 
