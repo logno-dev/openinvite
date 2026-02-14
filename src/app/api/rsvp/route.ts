@@ -67,7 +67,14 @@ export async function POST(request: Request) {
     guestGroupToken = guestToken;
 
     if (sessionUser) {
-      await linkGuestGroupToUserByToken(sessionUser.id, guestToken);
+      await linkGuestGroupToUserByToken(sessionUser.id, guestToken, {
+        userEmail: sessionUser.email,
+      });
+
+      await db
+        .update(guestGroups)
+        .set({ email: sessionUser.email })
+        .where(eq(guestGroups.id, groupId));
     }
   } else if (openToken) {
     const invitation = await db
@@ -103,6 +110,7 @@ export async function POST(request: Request) {
           .update(guestGroups)
           .set({
             displayName: guestDisplayName,
+            email: sessionUser.email,
             expectedAdults: adults,
             expectedKids: kids,
             expectedTotal: total,
@@ -128,6 +136,7 @@ export async function POST(request: Request) {
         expectedTotal: total,
         openCount: true,
         respondentUserId: sessionUser?.id ?? null,
+        email: sessionUser?.email ?? null,
         notes: null,
       });
 

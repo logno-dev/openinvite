@@ -4,6 +4,7 @@ import { guestGroups, guests, rsvpResponses } from "@/db/schema";
 
 type LinkOptions = {
   allowMergeWithExisting?: boolean;
+  userEmail?: string | null;
 };
 
 type LinkResult = {
@@ -92,6 +93,13 @@ export async function linkGuestGroupToUserByToken(
         });
       }
 
+      if (options?.userEmail) {
+        await db
+          .update(guestGroups)
+          .set({ email: options.userEmail })
+          .where(eq(guestGroups.id, primaryGroup.id));
+      }
+
       await db.update(guests).set({ groupId: primaryGroup.id }).where(eq(guests.groupId, claimedGroupId));
       await db.delete(rsvpResponses).where(eq(rsvpResponses.groupId, claimedGroupId));
       await db.delete(guestGroups).where(eq(guestGroups.id, claimedGroupId));
@@ -104,9 +112,16 @@ export async function linkGuestGroupToUserByToken(
     }
   }
 
+  const setValues: { respondentUserId: string; email?: string | null } = {
+    respondentUserId: userId,
+  };
+  if (options?.userEmail) {
+    setValues.email = options.userEmail;
+  }
+
   const updated = await db
     .update(guestGroups)
-    .set({ respondentUserId: userId })
+    .set(setValues)
     .where(and(eq(guestGroups.id, group[0].id), isNull(guestGroups.respondentUserId)));
 
   return {

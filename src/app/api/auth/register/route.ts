@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
+import { clearOpenClaimCookies, collectClaimGuestTokens } from "@/lib/respondent-claim";
 import { createSession, setSessionCookie } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -19,7 +20,7 @@ function isValidEmail(value: string) {
   return value.includes("@") && value.includes(".");
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const body = (await request.json()) as RegisterPayload;
   const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password ?? "";
@@ -62,9 +63,11 @@ export async function POST(request: Request) {
     displayName,
   });
 
-  if (claimGuestToken) {
-    await linkGuestGroupToUserByToken(id, claimGuestToken, {
+  const claimTokens = collectClaimGuestTokens(request, claimGuestToken);
+  for (const token of claimTokens) {
+    await linkGuestGroupToUserByToken(id, token, {
       allowMergeWithExisting: true,
+      userEmail: email,
     });
   }
 
@@ -74,5 +77,6 @@ export async function POST(request: Request) {
     user: { id, email, displayName },
   });
   setSessionCookie(response, token, expiresAt);
+  clearOpenClaimCookies(request, response);
   return response;
 }

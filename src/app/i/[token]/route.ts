@@ -38,7 +38,9 @@ export async function GET(
     ? await getSessionUserByToken(sessionToken)
     : null;
   if (sessionUser) {
-    await linkGuestGroupToUserByToken(sessionUser.id, token);
+    await linkGuestGroupToUserByToken(sessionUser.id, token, {
+      userEmail: sessionUser.email,
+    });
   }
 
   const group = await db
