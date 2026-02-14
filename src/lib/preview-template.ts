@@ -10,6 +10,10 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
+function escapeHtmlWithLineBreaks(value: string) {
+  return escapeHtml(value).replace(/\r\n|\r|\n/g, "<br>");
+}
+
 export type PreviewPayload = {
   invitation: {
     id: string;
@@ -82,6 +86,7 @@ export function applyPreviewDataToHtml(
     expected_kids: mode === "guest" ? "0" : null,
     expected_total: mode === "guest" ? "2" : null,
   };
+  const multilineIds = new Set(["address", "notes", "notes_2", "notes_3"]);
 
   Object.entries(placeholders).forEach(([id, value]) => {
     const el = doc.getElementById(id);
@@ -90,7 +95,11 @@ export function applyPreviewDataToHtml(
       el.remove();
       return;
     }
-    el.textContent = value;
+    if (multilineIds.has(id)) {
+      el.innerHTML = escapeHtmlWithLineBreaks(value);
+    } else {
+      el.textContent = value;
+    }
   });
 
   const mapEl = doc.getElementById("map_link");

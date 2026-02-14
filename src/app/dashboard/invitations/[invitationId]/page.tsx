@@ -392,8 +392,8 @@ export default function EditInvitationPage() {
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Address <span className="normal-case">(id: address)</span>
               </label>
-              <input
-                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+              <textarea
+                className="min-h-[88px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
                 value={form.address}
                 onChange={(event) => updateField("address", event.target.value)}
                 placeholder="44 Harbor Ave, Seattle"

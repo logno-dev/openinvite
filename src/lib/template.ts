@@ -116,6 +116,16 @@ function setContent(html: string, id: string, value: string | null) {
   return html.replace(pattern, `<$1>${safe}</$1>`);
 }
 
+function setMultilineContent(html: string, id: string, value: string | null) {
+  if (!value) return html;
+  const safe = escapeHtml(value).replace(/\r\n|\r|\n/g, "<br>");
+  const pattern = new RegExp(
+    `<([^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</[^>]+>`,
+    "i"
+  );
+  return html.replace(pattern, `<$1>${safe}</$1>`);
+}
+
 function ensureTitle(html: string, title: string) {
   const safe = escapeHtml(title);
   if (/<title>.*?<\/title>/i.test(html)) {
@@ -208,16 +218,16 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
     ? setContent(output, placeholderIds.location, data.locationName)
     : removeElementById(output, placeholderIds.location);
   output = data.address
-    ? setContent(output, placeholderIds.address, data.address)
+    ? setMultilineContent(output, placeholderIds.address, data.address)
     : removeElementById(output, placeholderIds.address);
   output = data.notes
-    ? setContent(output, placeholderIds.notes, data.notes)
+    ? setMultilineContent(output, placeholderIds.notes, data.notes)
     : removeElementById(output, placeholderIds.notes);
   output = data.notes2
-    ? setContent(output, placeholderIds.notes2, data.notes2)
+    ? setMultilineContent(output, placeholderIds.notes2, data.notes2)
     : removeElementById(output, placeholderIds.notes2);
   output = data.notes3
-    ? setContent(output, placeholderIds.notes3, data.notes3)
+    ? setMultilineContent(output, placeholderIds.notes3, data.notes3)
     : removeElementById(output, placeholderIds.notes3);
   output = data.hostNames
     ? setContent(output, placeholderIds.hostNames, data.hostNames)
