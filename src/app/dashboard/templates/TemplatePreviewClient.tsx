@@ -1,38 +1,57 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { applyPreviewDataToHtml, type PreviewPayload } from "@/lib/preview-template";
 
-export default function PreviewClientPage() {
-  const params = useParams();
+type TemplatePreviewClientProps = {
+  templateUrl: string | null;
+};
+
+export default function TemplatePreviewClient({ templateUrl }: TemplatePreviewClientProps) {
   const searchParams = useSearchParams();
-  const token = typeof params.previewToken === "string" ? params.previewToken : "";
   const mode = (searchParams.get("mode") ?? "open") === "guest" ? "guest" : "open";
-  const [payload, setPayload] = useState<PreviewPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [html, setHtml] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      if (!token) return;
-      const response = await fetch(`/api/preview/${token}`);
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error ?? "Preview not found");
-        return;
-      }
-      setPayload(data);
-    }
-
-    load();
-  }, [token]);
+  const payload = useMemo<PreviewPayload>(
+    () => ({
+      invitation: {
+        id: "template-preview",
+        title: "Template Preview",
+        templateUrlDraft: templateUrl,
+        templateUrlLive: null,
+        openRsvpToken: "template-preview",
+        timezone: "UTC",
+        countMode: "split",
+      },
+      details: {
+        date: "2026-06-21",
+        time: "18:00",
+        eventDate: "2026-06-21",
+        eventTime: "18:00",
+        dateFormat: "MMM d, yyyy",
+        timeFormat: "h:mm a",
+        locationName: "Rooftop Conservatory",
+        address: "44 Harbor Ave, Seattle",
+        mapLink: "https://maps.google.com",
+        mapEmbed: null,
+        notes: "Cocktail attire recommended.",
+        notes2: "Doors open 30 minutes early.",
+        notes3: "RSVP by May 30.",
+      },
+      hostNames: ["Lena", "Marco"],
+      rsvpOptions: [
+        { key: "yes", label: "We will be there" },
+        { key: "no", label: "No thank you" },
+        { key: "maybe", label: "Maybe" },
+      ],
+    }),
+    [templateUrl]
+  );
 
   useEffect(() => {
     async function render() {
-      if (!payload) return;
-      const templateUrl =
-        payload.invitation.templateUrlDraft ?? payload.invitation.templateUrlLive;
       if (!templateUrl) {
         setError("Template URL is missing.");
         return;
@@ -53,16 +72,20 @@ export default function PreviewClientPage() {
     }
 
     render();
-  }, [payload, mode]);
+  }, [templateUrl, payload, mode]);
 
-  const guestUrl = useMemo(() => `?mode=guest`, []);
-  const openUrl = useMemo(() => `?mode=open`, []);
+  const guestUrl = useMemo(() => `?templateUrl=${encodeURIComponent(templateUrl ?? "")}&mode=guest`, [
+    templateUrl,
+  ]);
+  const openUrl = useMemo(() => `?templateUrl=${encodeURIComponent(templateUrl ?? "")}&mode=open`, [
+    templateUrl,
+  ]);
 
   return (
     <div className="min-h-screen bg-[#0a0a14] text-[var(--foreground)]">
       <div className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a0a14] px-5 py-3 text-sm">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">Client preview</span>
+          <span className="font-semibold">Template preview</span>
           <span className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
             {mode === "guest" ? "Guest" : "Open"}
           </span>

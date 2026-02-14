@@ -25,6 +25,9 @@ export default async function Home() {
           <a className="transition-colors hover:text-[var(--foreground)]" href="#how">
             How it works
           </a>
+          <a className="transition-colors hover:text-[var(--foreground)]" href="/docs">
+            Docs
+          </a>
           <a className="transition-colors hover:text-[var(--foreground)]" href="#hosts">
             Hosts
           </a>
@@ -69,6 +72,12 @@ export default async function Home() {
                 href={user ? "/dashboard/invitations/new" : "/auth"}
               >
                 Start an invite
+              </a>
+              <a
+                className="rounded-full border border-white/30 bg-white/5 px-6 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:-translate-y-0.5"
+                href="/docs"
+              >
+                Read docs
               </a>
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-6 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:-translate-y-0.5"

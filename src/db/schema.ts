@@ -50,6 +50,20 @@ export const invitations = sqliteTable("invitations", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const templateGallery = sqliteTable("template_gallery", {
+  id: text("id").primaryKey(),
+  ownerUserId: text("owner_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  repoUrl: text("repo_url"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const invitationDetails = sqliteTable("invitation_details", {
   invitationId: text("invitation_id")
     .notNull()

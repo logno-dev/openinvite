@@ -12,6 +12,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@mdx-js/loader": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@next/mdx": "^16.1.6",
     "@libsql/client": "^0.17.0",
     "argon2": "^0.44.0",
     "drizzle-orm": "^0.45.1",

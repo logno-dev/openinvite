@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <defs>
+    <radialGradient id="leaf" cx="0.85" cy="0.15" r="0.4">
+      <stop offset="0%" stop-color="#6f9a63" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#6f9a63" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="675" fill="#f2f7f0" />
+  <rect width="1200" height="675" fill="url(#leaf)" />
+  <rect x="90" y="90" width="1020" height="495" fill="#ffffff" stroke="#dde6dc" stroke-width="3" />
+  <rect x="150" y="170" width="380" height="16" fill="#182317" />
+  <rect x="150" y="220" width="320" height="10" fill="#5f6d5f" />
+  <rect x="150" y="280" width="480" height="14" fill="#182317" />
+  <rect x="150" y="320" width="260" height="10" fill="#5f6d5f" />
+</svg>

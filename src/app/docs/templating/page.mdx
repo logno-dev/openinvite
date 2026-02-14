@@ -1,0 +1,57 @@
+# Template system
+
+OpenInvite loads your HTML template, sanitizes it, then injects invitation data
+by element id. If a value is missing, the element is removed entirely.
+
+## Core placeholder IDs
+
+Use these ids in your HTML so OpenInvite can inject values:
+
+- `title`, `date`, `time`
+- `location`, `address`
+- `notes`, `notes_2`, `notes_3`
+- `host_names`
+- `rsvp_yes_label`, `rsvp_no_label`, `rsvp_maybe_label`
+- `guest_name`, `expected_adults`, `expected_kids`, `expected_total`
+- `map_link`, `response`, `calendar_link`
+
+## Example snippet
+
+```html
+<section class="info">
+  <h1 id="title">Your event title</h1>
+  <p id="date">Date goes here</p>
+  <p id="time">Time goes here</p>
+  <div id="notes">Notes go here</div>
+  <div id="notes_2">Second notes block</div>
+  <div id="notes_3">Third notes block</div>
+  <div id="response"></div>
+</section>
+```
+
+## Map behavior
+
+If you provide a map embed HTML snippet, it is injected into `map_link`. If you
+only provide a URL, it is inserted as text or as the `href` on an anchor. If
+neither is provided, the element is removed.
+
+## Allowed HTML
+
+OpenInvite sanitizes your template. These tags are permitted:
+
+- `a`, `b`, `blockquote`, `br`, `code`, `div`, `em`, `footer`, `header`
+- `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`, `img`, `iframe`
+- `li`, `link`, `main`, `meta`, `ol`, `p`, `section`, `span`, `strong`, `style`, `ul`
+
+Allowed attributes include `class`, `id`, and `style` on all elements, plus
+safe attributes for `a`, `img`, `link`, `iframe`, and `meta`.
+
+## External assets
+
+- Scripts are blocked.
+- Only Google Fonts are allowed for external font loading.
+- Images must use https or data URLs.
+- Iframes are limited to Google Maps.
+
+If your template depends on anything else, it will be stripped during
+sanitization.

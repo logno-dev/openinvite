@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Studio Minimal</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111111;
+        --muted: #606060;
+        --line: #e6e2dc;
+        --accent: #d6a85f;
+        --card: #ffffff;
+        --bg: #f6f1ea;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Georgia", "Times New Roman", serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      .frame {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 48px 20px;
+      }
+
+      .card {
+        width: min(760px, 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
+        box-shadow: 0 20px 80px rgba(15, 12, 8, 0.08);
+        padding: 52px 56px 48px;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.35em;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      h1 {
+        font-size: 40px;
+        font-weight: 400;
+        letter-spacing: 0.08em;
+        margin: 18px 0 14px;
+      }
+
+      .host {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--muted);
+      }
+
+      .rule {
+        height: 1px;
+        background: var(--line);
+        margin: 28px 0 24px;
+      }
+
+      .details {
+        display: grid;
+        gap: 8px;
+        font-size: 18px;
+      }
+
+      .details span {
+        display: block;
+      }
+
+      .address {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .notes {
+        margin-top: 24px;
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .rsvp {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .calendar {
+        margin-top: 16px;
+      }
+
+      .map {
+        margin-top: 12px;
+        font-size: 12px;
+      }
+
+      .map a {
+        color: var(--ink);
+        text-decoration: none;
+        border-bottom: 1px solid var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <section class="card">
+        <div class="eyebrow">Invitation</div>
+        <h1 id="title"></h1>
+        <div class="host">Hosted by <span id="host_names"></span></div>
+
+        <div class="rule"></div>
+
+        <div class="details">
+          <span id="date"></span>
+          <span id="time"></span>
+          <span id="location"></span>
+          <span class="address" id="address"></span>
+        </div>
+
+        <div class="map">
+          <a id="map_link" href="https://maps.google.com"></a>
+        </div>
+
+        <div class="notes" id="notes"></div>
+        <div class="notes" id="notes_2"></div>
+        <div class="notes" id="notes_3"></div>
+
+        <div class="rsvp">
+          <div id="response"></div>
+          <div class="calendar" id="calendar_link"></div>
+        </div>
+
+        <div class="footer">We cannot wait to celebrate</div>
+      </section>
+    </div>
+  </body>
+</html>
