@@ -32,8 +32,8 @@ export async function POST(request: Request) {
   const guestToken = form.get("guestToken")?.toString() || null;
   const openToken = form.get("openToken")?.toString() || null;
   const responseKey = form.get("response")?.toString() || "";
-  const adults = parseNumber(form.get("adults")?.toString() || null);
-  const kids = parseNumber(form.get("kids")?.toString() || null);
+  let adults = parseNumber(form.get("adults")?.toString() || null);
+  let kids = parseNumber(form.get("kids")?.toString() || null);
   let total = parseNumber(form.get("total")?.toString() || null);
   const message = form.get("message")?.toString().trim() || null;
 
@@ -45,6 +45,14 @@ export async function POST(request: Request) {
   let invitationId: string | null = null;
   let guestDisplayName: string | null = null;
   let guestGroupToken: string | null = null;
+  let guestConstraints:
+    | {
+        expectedAdults: number;
+        expectedKids: number;
+        expectedTotal: number;
+        openCount: boolean;
+      }
+    | null = null;
 
   if (guestToken) {
     const group = await db
@@ -52,6 +60,10 @@ export async function POST(request: Request) {
         id: guestGroups.id,
         invitationId: guestGroups.invitationId,
         displayName: guestGroups.displayName,
+        expectedAdults: guestGroups.expectedAdults,
+        expectedKids: guestGroups.expectedKids,
+        expectedTotal: guestGroups.expectedTotal,
+        openCount: guestGroups.openCount,
       })
       .from(guestGroups)
       .where(eq(guestGroups.token, guestToken))
@@ -65,6 +77,17 @@ export async function POST(request: Request) {
     invitationId = group[0].invitationId;
     guestDisplayName = group[0].displayName;
     guestGroupToken = guestToken;
+    guestConstraints = {
+      expectedAdults: group[0].expectedAdults,
+      expectedKids: group[0].expectedKids,
+      expectedTotal: group[0].expectedTotal,
+      openCount: group[0].openCount,
+    };
+
+    if (!group[0].openCount) {
+      adults = Math.min(adults, group[0].expectedAdults);
+      kids = Math.min(kids, group[0].expectedKids);
+    }
 
     if (sessionUser) {
       await linkGuestGroupToUserByToken(sessionUser.id, guestToken, {
@@ -159,6 +182,8 @@ export async function POST(request: Request) {
 
   if (invitationConfig[0]?.countMode === "split") {
     total = adults + kids;
+  } else if (guestConstraints && !guestConstraints.openCount) {
+    total = Math.min(total, guestConstraints.expectedTotal);
   }
 
   const validOption = await findOption(invitationId, responseKey);

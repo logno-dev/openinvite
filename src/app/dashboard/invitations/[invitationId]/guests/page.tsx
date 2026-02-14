@@ -87,6 +87,25 @@ export default function GuestListPage() {
 
   async function handleGuestSubmit(event: React.FormEvent) {
     event.preventDefault();
+    const adults = countMode === "split" ? Number(guestForm.expectedAdults) : 0;
+    const kids = countMode === "split" ? Number(guestForm.expectedKids) : 0;
+    const total =
+      countMode === "total"
+        ? Number(guestForm.expectedTotal)
+        : Number(guestForm.expectedAdults) + Number(guestForm.expectedKids);
+
+    if (guestForm.openCount) {
+      const hasMinimum = countMode === "total" ? total >= 1 : adults + kids >= 1;
+      if (!hasMinimum) {
+        setGuestMessage(
+          countMode === "total"
+            ? "Open count requires expected total of at least 1"
+            : "Open count requires at least 1 adult or child"
+        );
+        return;
+      }
+    }
+
     setGuestSaving(true);
     setGuestMessage("");
 
@@ -97,12 +116,9 @@ export default function GuestListPage() {
         displayName: guestForm.displayName,
         email: guestForm.email,
         phone: guestForm.phone,
-        expectedAdults: countMode === "split" ? Number(guestForm.expectedAdults) : 0,
-        expectedKids: countMode === "split" ? Number(guestForm.expectedKids) : 0,
-        expectedTotal:
-          countMode === "total"
-            ? Number(guestForm.expectedTotal)
-            : Number(guestForm.expectedAdults) + Number(guestForm.expectedKids),
+        expectedAdults: adults,
+        expectedKids: kids,
+        expectedTotal: total,
         openCount: guestForm.openCount,
       }),
     });
@@ -126,12 +142,9 @@ export default function GuestListPage() {
         displayName: guestForm.displayName,
         email: guestForm.email || null,
         phone: guestForm.phone || null,
-        expectedAdults: countMode === "split" ? Number(guestForm.expectedAdults) : 0,
-        expectedKids: countMode === "split" ? Number(guestForm.expectedKids) : 0,
-        expectedTotal:
-          countMode === "total"
-            ? Number(guestForm.expectedTotal)
-            : Number(guestForm.expectedAdults) + Number(guestForm.expectedKids),
+        expectedAdults: adults,
+        expectedKids: kids,
+        expectedTotal: total,
         openCount: guestForm.openCount,
         token: data.token ?? "",
       },
@@ -513,15 +526,19 @@ export default function GuestListPage() {
                 placeholder="(555) 555-5555"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={guestForm.openCount}
-                onChange={(event) =>
-                  setGuestForm((prev) => ({ ...prev, openCount: event.target.checked }))
-                }
-              />
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
               <span className="text-sm text-[var(--muted)]">Allow open count</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={guestForm.openCount}
+                onClick={() =>
+                  setGuestForm((prev) => ({ ...prev, openCount: !prev.openCount }))
+                }
+                className="oi-toggle"
+              >
+                <span className="oi-toggle-thumb" />
+              </button>
             </div>
             <div className="flex items-center gap-3">
               <button

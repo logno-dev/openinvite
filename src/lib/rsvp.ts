@@ -15,6 +15,7 @@ type RsvpRenderInput = {
   tokenFieldName: "guestToken" | "openToken";
   tokenValue: string;
   countMode?: "split" | "total";
+  allowOpenCount?: boolean;
 };
 
 function escapeHtml(value: string) {
@@ -57,23 +58,42 @@ export function renderRsvpForm(input: RsvpRenderInput) {
       : "";
 
   const countMode = input.countMode ?? "split";
+  const countReadonly = "";
+  const adultsMax = input.expectedAdults ?? 0;
+  const kidsMax = input.expectedKids ?? 0;
+  const totalMax = input.expectedTotal ?? adultsMax + kidsMax;
+  const adultsMaxAttr = input.allowOpenCount === false ? `max="${adultsMax}"` : "";
+  const kidsMaxAttr = input.allowOpenCount === false ? `max="${kidsMax}"` : "";
+  const totalMaxAttr = input.allowOpenCount === false ? `max="${totalMax}"` : "";
+  const adultsLimit = input.allowOpenCount === false
+    ? `<div class="oi-limit">Limit: ${adultsMax}</div>`
+    : "";
+  const kidsLimit = input.allowOpenCount === false
+    ? `<div class="oi-limit">Limit: ${kidsMax}</div>`
+    : "";
+  const totalLimit = input.allowOpenCount === false
+    ? `<div class="oi-limit">Limit: ${totalMax}</div>`
+    : "";
 
   const countFields =
     countMode === "split"
       ? `
         <div class="oi-field">
           <label class="oi-label">Adults</label>
-          <input class="oi-input" type="number" min="0" name="adults" value="${adults}" />
+          ${adultsLimit}
+          <input class="oi-input" type="number" min="0" ${adultsMaxAttr} name="adults" value="${adults}" ${countReadonly} />
         </div>
         <div class="oi-field">
           <label class="oi-label">Kids</label>
-          <input class="oi-input" type="number" min="0" name="kids" value="${kids}" />
+          ${kidsLimit}
+          <input class="oi-input" type="number" min="0" ${kidsMaxAttr} name="kids" value="${kids}" ${countReadonly} />
         </div>
       `
       : `
         <div class="oi-field">
           <label class="oi-label">Total</label>
-          <input class="oi-input" type="number" min="0" name="total" value="${total}" />
+          ${totalLimit}
+          <input class="oi-input" type="number" min="0" ${totalMaxAttr} name="total" value="${total}" ${countReadonly} />
         </div>
       `;
 

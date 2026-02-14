@@ -51,6 +51,7 @@ export async function GET(
       expectedAdults: guestGroups.expectedAdults,
       expectedKids: guestGroups.expectedKids,
       expectedTotal: guestGroups.expectedTotal,
+      openCount: guestGroups.openCount,
     })
     .from(guestGroups)
     .where(eq(guestGroups.token, token))
@@ -166,6 +167,7 @@ export async function GET(
         tokenFieldName: "guestToken",
         tokenValue: token,
         countMode: record.countMode === "total" ? "total" : "split",
+        allowOpenCount: group[0].openCount,
       }),
       calendarLink: `/api/calendar/${token}`,
     });

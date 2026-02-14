@@ -155,6 +155,35 @@ export async function POST(
     0
   );
 
+  const invitation = await db
+    .select({ countMode: invitations.countMode })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId))
+    .limit(1);
+
+  if (invitation.length === 0) {
+    return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+  }
+
+  const isOpenCount = body.openCount ?? false;
+  if (isOpenCount) {
+    const hasMinimumForOpenCount =
+      invitation[0].countMode === "total"
+        ? expectedTotal >= 1
+        : expectedAdults + expectedKids >= 1;
+    if (!hasMinimumForOpenCount) {
+      return NextResponse.json(
+        {
+          error:
+            invitation[0].countMode === "total"
+              ? "Open count requires expected total of at least 1"
+              : "Open count requires at least 1 adult or child",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   const groupId = crypto.randomUUID();
   const token = crypto.randomUUID();
 
@@ -168,7 +197,7 @@ export async function POST(
     expectedAdults,
     expectedKids,
     expectedTotal,
-    openCount: body.openCount ?? false,
+    openCount: isOpenCount,
     notes: body.notes?.trim() || null,
   });
 
