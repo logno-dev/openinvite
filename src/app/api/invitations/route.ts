@@ -27,6 +27,7 @@ type CreateInvitationPayload = {
   notes3?: string;
   timezone?: string;
   countMode?: "split" | "total";
+  shareGuestList?: boolean;
   eventDate?: string;
   eventTime?: string;
   dateFormat?: string;
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
     title,
     timezone: body.timezone?.trim() || "UTC",
     countMode: body.countMode ?? "split",
+    shareGuestList: body.shareGuestList ?? false,
     templateUrlDraft: draftUrl,
     templateUrlLive: liveUrl,
     openRsvpToken: crypto.randomUUID(),

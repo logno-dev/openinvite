@@ -15,6 +15,7 @@ type UpdateInvitationPayload = {
   title?: string;
   timezone?: string;
   countMode?: "split" | "total";
+  shareGuestList?: boolean;
   templateUrlDraft?: string | null;
   templateUrlLive?: string | null;
   date?: string | null;
@@ -77,6 +78,9 @@ export async function PATCH(
   }
   if (body.countMode !== undefined) {
     invitationUpdate.countMode = body.countMode;
+  }
+  if (body.shareGuestList !== undefined) {
+    invitationUpdate.shareGuestList = body.shareGuestList;
   }
   if (body.templateUrlDraft !== undefined) {
     invitationUpdate.templateUrlDraft = body.templateUrlDraft?.trim() || null;
@@ -219,6 +223,7 @@ export async function GET(
       previewToken: invitations.previewToken,
       createdAt: invitations.createdAt,
       countMode: invitations.countMode,
+      shareGuestList: invitations.shareGuestList,
     })
       .from(invitations)
       .where(eq(invitations.id, invitationId))

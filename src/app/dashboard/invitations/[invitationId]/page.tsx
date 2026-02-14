@@ -25,6 +25,7 @@ type InvitationForm = {
   notes3: string;
   timezone: string;
   countMode: "split" | "total";
+  shareGuestList: boolean;
   rsvpYes: string;
   rsvpNo: string;
   rsvpMaybe: string;
@@ -42,6 +43,7 @@ type InvitationResponse = {
     previewToken: string | null;
     openRsvpToken: string | null;
     countMode: "split" | "total";
+    shareGuestList: boolean;
   };
   details: {
     date: string | null;
@@ -114,6 +116,7 @@ export default function EditInvitationPage() {
         notes3: data.details?.notes3 ?? "",
         timezone: data.invitation.timezone,
         countMode: data.invitation.countMode,
+        shareGuestList: data.invitation.shareGuestList,
         rsvpYes,
         rsvpNo,
         rsvpMaybe,
@@ -160,6 +163,7 @@ export default function EditInvitationPage() {
         notes3: form.notes3,
         timezone: form.timezone,
         countMode: form.countMode,
+        shareGuestList: form.shareGuestList,
         rsvpOptions: [
           { key: "yes", label: form.rsvpYes },
           { key: "no", label: form.rsvpNo },
@@ -477,6 +481,14 @@ export default function EditInvitationPage() {
                 <option value="total">Total guests only</option>
               </select>
             </div>
+            <label className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-[var(--foreground)]">
+              <input
+                type="checkbox"
+                checked={form.shareGuestList}
+                onChange={(event) => updateField("shareGuestList", event.target.checked)}
+              />
+              <span>Allow registered respondents to view guest list and group chat</span>
+            </label>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

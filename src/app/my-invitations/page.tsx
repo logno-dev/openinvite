@@ -11,6 +11,7 @@ type RespondentInvitation = {
   invitationId: string;
   invitationTitle: string;
   countMode: "split" | "total";
+  shareGuestList: boolean;
   response: {
     optionKey: string;
     optionLabel: string;
@@ -98,6 +99,14 @@ export default function MyInvitationsPage() {
                   >
                     Open invitation
                   </a>
+                  {item.shareGuestList ? (
+                    <a
+                      className="rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/15 px-4 py-2 text-xs uppercase tracking-[0.15em] text-[var(--accent)]"
+                      href={`/my-invitations/${item.guestToken}/guests`}
+                    >
+                      See guests
+                    </a>
+                  ) : null}
                 </div>
                 <div className="mt-3 text-sm text-[var(--muted)]">
                   {item.response ? (

@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       invitationId: invitations.id,
       invitationTitle: invitations.title,
       countMode: invitations.countMode,
+      shareGuestList: invitations.shareGuestList,
     })
     .from(guestGroups)
     .innerJoin(invitations, eq(invitations.id, guestGroups.invitationId))
@@ -73,6 +74,7 @@ export async function GET(request: NextRequest) {
       invitationId: group.invitationId,
       invitationTitle: group.invitationTitle,
       countMode: group.countMode,
+      shareGuestList: group.shareGuestList,
       response: response
         ? {
             optionKey: response.optionKey,

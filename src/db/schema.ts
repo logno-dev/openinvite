@@ -32,6 +32,9 @@ export const invitations = sqliteTable("invitations", {
   status: text("status").notNull().default("draft"),
   timezone: text("timezone").notNull().default("UTC"),
   countMode: text("count_mode").notNull().default("split"),
+  shareGuestList: integer("share_guest_list", { mode: "boolean" })
+    .notNull()
+    .default(sql`(0)`),
   templateUrl: text("template_url"),
   templateUrlDraft: text("template_url_draft"),
   templateUrlLive: text("template_url_live"),
@@ -180,6 +183,23 @@ export const rsvpResponses = sqliteTable("rsvp_responses", {
     onDelete: "set null",
   }),
   updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+});
+
+export const invitationGuestMessages = sqliteTable("invitation_guest_messages", {
+  id: text("id").primaryKey(),
+  invitationId: text("invitation_id")
+    .notNull()
+    .references(() => invitations.id, { onDelete: "cascade" }),
+  groupId: text("group_id")
+    .notNull()
+    .references(() => guestGroups.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
 });

@@ -24,6 +24,7 @@ type InvitationForm = {
   notes3: string;
   timezone: string;
   countMode: "split" | "total";
+  shareGuestList: boolean;
   rsvpYes: string;
   rsvpNo: string;
   rsvpMaybe: string;
@@ -50,6 +51,7 @@ export default function NewInvitationPage() {
     notes3: "",
     timezone: "UTC",
     countMode: "split",
+    shareGuestList: false,
     rsvpYes: "We will be there",
     rsvpNo: "No thank you",
     rsvpMaybe: "Maybe",
@@ -91,6 +93,7 @@ export default function NewInvitationPage() {
         notes3: form.notes3,
         timezone: form.timezone,
         countMode: form.countMode,
+        shareGuestList: form.shareGuestList,
         rsvpOptions: [
           { key: "yes", label: form.rsvpYes },
           { key: "no", label: form.rsvpNo },
@@ -374,6 +377,14 @@ export default function NewInvitationPage() {
                 <option value="total">Total guests only</option>
               </select>
             </div>
+            <label className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-[var(--foreground)]">
+              <input
+                type="checkbox"
+                checked={form.shareGuestList}
+                onChange={(event) => updateField("shareGuestList", event.target.checked)}
+              />
+              <span>Allow registered respondents to view guest list and group chat</span>
+            </label>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
