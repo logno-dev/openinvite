@@ -32,7 +32,7 @@ export default function PreviewClientPage() {
     async function render() {
       if (!payload) return;
       const templateUrl =
-        payload.invitation.templateUrlDraft ?? payload.invitation.templateUrlLive;
+        payload.invitation.templateUrlLive ?? payload.invitation.templateUrlDraft;
       if (!templateUrl) {
         setError("Template URL is missing.");
         return;
