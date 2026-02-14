@@ -26,6 +26,7 @@ type UpdateInvitationPayload = {
   locationName?: string | null;
   address?: string | null;
   mapLink?: string | null;
+  registryLink?: string | null;
   mapEmbed?: string | null;
   notes?: string | null;
   notes2?: string | null;
@@ -113,11 +114,12 @@ export async function PATCH(
     body.eventTime !== undefined ||
     body.dateFormat !== undefined ||
     body.timeFormat !== undefined ||
-    body.locationName !== undefined ||
-    body.address !== undefined ||
-    body.mapLink !== undefined ||
-    body.mapEmbed !== undefined ||
-    body.notes !== undefined ||
+      body.locationName !== undefined ||
+      body.address !== undefined ||
+      body.mapLink !== undefined ||
+      body.registryLink !== undefined ||
+      body.mapEmbed !== undefined ||
+      body.notes !== undefined ||
     body.notes2 !== undefined ||
     body.notes3 !== undefined
   ) {
@@ -134,6 +136,7 @@ export async function PATCH(
         locationName: body.locationName?.trim() || null,
         address: body.address?.trim() || null,
         mapLink: body.mapLink?.trim() || null,
+        registryLink: body.registryLink?.trim() || null,
         mapEmbed: body.mapEmbed?.trim() || null,
         notes: body.notes?.trim() || null,
         notes2: body.notes2?.trim() || null,
@@ -151,6 +154,7 @@ export async function PATCH(
           locationName: body.locationName?.trim() || null,
           address: body.address?.trim() || null,
           mapLink: body.mapLink?.trim() || null,
+          registryLink: body.registryLink?.trim() || null,
           mapEmbed: body.mapEmbed?.trim() || null,
           notes: body.notes?.trim() || null,
           notes2: body.notes2?.trim() || null,

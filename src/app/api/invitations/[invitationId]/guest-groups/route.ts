@@ -72,6 +72,7 @@ export async function GET(
       adults: rsvpResponses.adults,
       kids: rsvpResponses.kids,
       total: rsvpResponses.total,
+      message: rsvpResponses.message,
       updatedAt: rsvpResponses.updatedAt,
     })
     .from(rsvpResponses)
@@ -86,6 +87,7 @@ export async function GET(
         adults: row.adults,
         kids: row.kids,
         total: row.total,
+        message: row.message,
         updatedAt: row.updatedAt,
       },
     ])

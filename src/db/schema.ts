@@ -8,7 +8,7 @@ export const users = sqliteTable("users", {
   displayName: text("display_name"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const sessions = sqliteTable("sessions", {
@@ -19,7 +19,7 @@ export const sessions = sqliteTable("sessions", {
   token: text("token").notNull().unique(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
   expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 });
 
@@ -38,16 +38,16 @@ export const invitations = sqliteTable("invitations", {
   openRsvpToken: text("open_rsvp_token")
     .notNull()
     .unique()
-    .default(sql`lower(hex(randomblob(16)))`),
+    .default(sql`(lower(hex(randomblob(16))))`),
   previewToken: text("preview_token")
     .notNull()
     .unique()
-    .default(sql`lower(hex(randomblob(16)))`),
+    .default(sql`(lower(hex(randomblob(16))))`),
   rsvpDeadline: integer("rsvp_deadline", { mode: "timestamp" }),
   maxGuests: integer("max_guests"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const templateGallery = sqliteTable("template_gallery", {
@@ -66,7 +66,7 @@ export const templateGallery = sqliteTable("template_gallery", {
   tags: text("tags"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const invitationDetails = sqliteTable("invitation_details", {
@@ -83,6 +83,7 @@ export const invitationDetails = sqliteTable("invitation_details", {
   locationName: text("location_name"),
   address: text("address"),
   mapLink: text("map_link"),
+  registryLink: text("registry_link"),
   mapEmbed: text("map_embed"),
   notes: text("notes"),
   notes2: text("notes_2"),
@@ -101,7 +102,7 @@ export const invitationHosts = sqliteTable("invitation_hosts", {
   canEdit: integer("can_edit", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const hostInvites = sqliteTable("host_invites", {
@@ -112,7 +113,7 @@ export const hostInvites = sqliteTable("host_invites", {
   token: text("token").notNull().unique(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
   usedAt: integer("used_at", { mode: "timestamp" }),
   usedByUserId: text("used_by_user_id").references(() => users.id, {
     onDelete: "set null",
@@ -146,7 +147,7 @@ export const guestGroups = sqliteTable("guest_groups", {
   notes: text("notes"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const guests = sqliteTable("guests", {
@@ -159,7 +160,7 @@ export const guests = sqliteTable("guests", {
   dietaryNotes: text("dietary_notes"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const rsvpResponses = sqliteTable("rsvp_responses", {
@@ -177,7 +178,7 @@ export const rsvpResponses = sqliteTable("rsvp_responses", {
   }),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const contacts = sqliteTable("contacts", {
@@ -191,7 +192,7 @@ export const contacts = sqliteTable("contacts", {
   tags: text("tags"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const contactLists = sqliteTable("contact_lists", {
@@ -202,7 +203,7 @@ export const contactLists = sqliteTable("contact_lists", {
   name: text("name").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const contactListItems = sqliteTable("contact_list_items", {
@@ -215,5 +216,5 @@ export const contactListItems = sqliteTable("contact_list_items", {
     .references(() => contacts.id, { onDelete: "cascade" }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(CURRENT_TIMESTAMP)`),
 });

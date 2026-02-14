@@ -107,6 +107,7 @@ export async function GET(
     locationName: details[0]?.locationName ?? null,
     address: details[0]?.address ?? null,
     mapLink: details[0]?.mapLink ?? null,
+    registryLink: details[0]?.registryLink ?? null,
     mapEmbed: details[0]?.mapEmbed ?? null,
     notes: details[0]?.notes ?? null,
     notes2: details[0]?.notes2 ?? null,

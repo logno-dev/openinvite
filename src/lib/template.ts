@@ -7,6 +7,7 @@ export type InvitationTemplateData = {
   locationName: string | null;
   address: string | null;
   mapLink: string | null;
+  registryLink?: string | null;
   mapEmbed: string | null;
   notes: string | null;
   notes2: string | null;
@@ -91,6 +92,7 @@ const placeholderIds = {
   expectedKids: "expected_kids",
   expectedTotal: "expected_total",
   mapLink: "map_link",
+  registryLink: "registry_link",
   response: "response",
   calendarLink: "calendar_link",
 } as const;
@@ -292,6 +294,15 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
     }
   } else {
     output = removeElementById(output, placeholderIds.mapLink);
+  }
+
+  if (data.registryLink) {
+    const registryAnchor = `<a href="${escapeHtml(
+      data.registryLink
+    )}">Gift Registry</a>`;
+    output = setRawContent(output, placeholderIds.registryLink, registryAnchor);
+  } else {
+    output = removeElementById(output, placeholderIds.registryLink);
   }
 
   if (data.responseHtml) {

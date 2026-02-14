@@ -18,6 +18,7 @@ type InvitationForm = {
   locationName: string;
   address: string;
   mapLink: string;
+  registryLink: string;
   mapEmbed: string;
   notes: string;
   notes2: string;
@@ -52,6 +53,7 @@ type InvitationResponse = {
     locationName: string | null;
     address: string | null;
     mapLink: string | null;
+    registryLink: string | null;
     mapEmbed: string | null;
     notes: string | null;
     notes2: string | null;
@@ -105,6 +107,7 @@ export default function EditInvitationPage() {
         locationName: data.details?.locationName ?? "",
         address: data.details?.address ?? "",
         mapLink: data.details?.mapLink ?? "",
+        registryLink: data.details?.registryLink ?? "",
         mapEmbed: data.details?.mapEmbed ?? "",
         notes: data.details?.notes ?? "",
         notes2: data.details?.notes2 ?? "",
@@ -150,6 +153,7 @@ export default function EditInvitationPage() {
         locationName: form.locationName,
         address: form.address,
         mapLink: form.mapLink,
+        registryLink: form.registryLink,
         mapEmbed: form.mapEmbed,
         notes: form.notes,
         notes2: form.notes2,
@@ -355,6 +359,17 @@ export default function EditInvitationPage() {
                 value={form.mapLink}
                 onChange={(event) => updateField("mapLink", event.target.value)}
                 placeholder="https://maps.example.com"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Registry link <span className="normal-case">(id: registry_link)</span>
+              </label>
+              <input
+                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.registryLink}
+                onChange={(event) => updateField("registryLink", event.target.value)}
+                placeholder="https://registry.example.com"
               />
             </div>
             <div className="flex flex-col gap-2 md:col-span-2">

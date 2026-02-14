@@ -20,6 +20,7 @@ type CreateInvitationPayload = {
   locationName?: string;
   address?: string;
   mapLink?: string;
+  registryLink?: string;
   mapEmbed?: string;
   notes?: string;
   notes2?: string;
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
     locationName: body.locationName?.trim() || null,
     address: body.address?.trim() || null,
     mapLink: body.mapLink?.trim() || null,
+    registryLink: body.registryLink?.trim() || null,
     mapEmbed: body.mapEmbed?.trim() || null,
     notes: body.notes?.trim() || null,
     notes2: body.notes2?.trim() || null,

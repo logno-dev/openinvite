@@ -1,7 +1,13 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { invitationDetails, invitations, rsvpOptions } from "@/db/schema";
+import {
+  guestGroups,
+  invitationDetails,
+  invitations,
+  rsvpOptions,
+} from "@/db/schema";
 import { formatDate, formatTime } from "@/lib/date-format";
 import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
 import { renderRsvpForm } from "@/lib/rsvp";
@@ -17,7 +23,7 @@ async function fetchTemplate(url: string) {
 }
 
 export async function GET(
-  _: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
@@ -38,6 +44,21 @@ export async function GET(
 
   const record = invitation[0];
   const templateUrlLive = record.templateUrlLive;
+
+  const cookieStore = await cookies();
+  const guestToken = cookieStore.get(`oi_open_${token}`)?.value ?? null;
+  if (guestToken) {
+    const matchingGroup = await db
+      .select({ id: guestGroups.id })
+      .from(guestGroups)
+      .where(
+        and(eq(guestGroups.token, guestToken), eq(guestGroups.invitationId, record.id))
+      )
+      .limit(1);
+    if (matchingGroup.length > 0) {
+      return NextResponse.redirect(new URL(`/i/${guestToken}`, request.url));
+    }
+  }
 
   if (!templateUrlLive) {
     return NextResponse.json({ error: "Template URL missing" }, { status: 400 });
@@ -80,6 +101,7 @@ export async function GET(
       locationName: details[0]?.locationName ?? null,
       address: details[0]?.address ?? null,
       mapLink: details[0]?.mapLink ?? null,
+      registryLink: details[0]?.registryLink ?? null,
       mapEmbed: details[0]?.mapEmbed ?? null,
       notes: details[0]?.notes ?? null,
       notes2: details[0]?.notes2 ?? null,

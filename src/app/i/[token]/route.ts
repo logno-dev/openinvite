@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   guestGroups,
@@ -7,6 +7,7 @@ import {
   invitationHosts,
   invitations,
   rsvpOptions,
+  rsvpResponses,
   users,
 } from "@/db/schema";
 import { formatDate, formatTime } from "@/lib/date-format";
@@ -83,6 +84,19 @@ export async function GET(
     .innerJoin(users, eq(users.id, invitationHosts.userId))
     .where(eq(invitationHosts.invitationId, record.id));
 
+  const latestResponse = await db
+    .select({
+      optionKey: rsvpResponses.optionKey,
+      adults: rsvpResponses.adults,
+      kids: rsvpResponses.kids,
+      total: rsvpResponses.total,
+      message: rsvpResponses.message,
+    })
+    .from(rsvpResponses)
+    .where(eq(rsvpResponses.groupId, group[0].id))
+    .orderBy(desc(rsvpResponses.updatedAt))
+    .limit(1);
+
   let injected = "";
   try {
     const html = await fetchTemplate(templateUrlLive);
@@ -109,6 +123,7 @@ export async function GET(
       locationName: details[0]?.locationName ?? null,
       address: details[0]?.address ?? null,
       mapLink: details[0]?.mapLink ?? null,
+      registryLink: details[0]?.registryLink ?? null,
       mapEmbed: details[0]?.mapEmbed ?? null,
       notes: details[0]?.notes ?? null,
       notes2: details[0]?.notes2 ?? null,
@@ -128,6 +143,11 @@ export async function GET(
         expectedAdults: group[0].expectedAdults,
         expectedKids: group[0].expectedKids,
         expectedTotal: group[0].expectedTotal,
+        responseOptionKey: latestResponse[0]?.optionKey ?? null,
+        responseAdults: latestResponse[0]?.adults ?? null,
+        responseKids: latestResponse[0]?.kids ?? null,
+        responseTotal: latestResponse[0]?.total ?? null,
+        responseMessage: latestResponse[0]?.message ?? null,
         options,
         tokenFieldName: "guestToken",
         tokenValue: token,

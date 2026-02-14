@@ -6,6 +6,11 @@ type RsvpRenderInput = {
   expectedAdults?: number | null;
   expectedKids?: number | null;
   expectedTotal?: number | null;
+  responseOptionKey?: string | null;
+  responseAdults?: number | null;
+  responseKids?: number | null;
+  responseTotal?: number | null;
+  responseMessage?: string | null;
   options: InvitationTemplateData["rsvpOptions"];
   tokenFieldName: "guestToken" | "openToken";
   tokenValue: string;
@@ -22,11 +27,13 @@ function escapeHtml(value: string) {
 }
 
 export function renderRsvpForm(input: RsvpRenderInput) {
+  const selectedOption = input.responseOptionKey ?? "";
   const options = input.options
     .map((option) => {
+      const checked = option.key === selectedOption ? "checked" : "";
       return `
         <label class="oi-rsvp-option">
-          <input class="oi-rsvp-radio" type="radio" name="response" value="${escapeHtml(option.key)}" required />
+          <input class="oi-rsvp-radio" type="radio" name="response" value="${escapeHtml(option.key)}" ${checked} required />
           <span class="oi-rsvp-label">${escapeHtml(option.label)}</span>
         </label>
       `;
@@ -34,9 +41,10 @@ export function renderRsvpForm(input: RsvpRenderInput) {
     .join("");
 
   const guestName = input.guestName ? escapeHtml(input.guestName) : "";
-  const adults = input.expectedAdults ?? 0;
-  const kids = input.expectedKids ?? 0;
-  const total = input.expectedTotal ?? adults + kids;
+  const adults = input.responseAdults ?? input.expectedAdults ?? 0;
+  const kids = input.responseKids ?? input.expectedKids ?? 0;
+  const total = input.responseTotal ?? input.expectedTotal ?? adults + kids;
+  const message = input.responseMessage ? escapeHtml(input.responseMessage) : "";
 
   const guestNameField =
     input.tokenFieldName === "openToken"
@@ -77,7 +85,7 @@ export function renderRsvpForm(input: RsvpRenderInput) {
       ${countFields}
       <div class="oi-field">
         <label class="oi-label">Message</label>
-        <textarea class="oi-textarea" name="message" rows="3"></textarea>
+        <textarea class="oi-textarea" name="message" rows="3">${message}</textarea>
       </div>
       <div class="oi-rsvp-options">
         ${options}

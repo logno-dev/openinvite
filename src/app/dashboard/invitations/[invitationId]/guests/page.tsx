@@ -20,6 +20,7 @@ type GuestGroup = {
     adults: number;
     kids: number;
     total: number;
+    message: string | null;
     updatedAt: string | null;
   } | null;
 };
@@ -164,7 +165,7 @@ export default function GuestListPage() {
       adults: String(group.response?.adults ?? 0),
       kids: String(group.response?.kids ?? 0),
       total: String(group.response?.total ?? 0),
-      message: "",
+      message: group.response?.message ?? "",
     });
   }
 
@@ -256,6 +257,7 @@ export default function GuestListPage() {
                 adults,
                 kids,
                 total,
+                message: responseForm.message || null,
                 updatedAt: new Date().toISOString(),
               },
             }
@@ -643,6 +645,11 @@ export default function GuestListPage() {
                     <span>Response: Not received</span>
                   )}
                 </div>
+                {group.response?.message ? (
+                  <div className="mt-2 text-xs text-[var(--muted)]">
+                    <span>Message: {group.response.message}</span>
+                  </div>
+                ) : null}
 
                 {editingId === group.id ? (
                   <div className="mt-4 grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
