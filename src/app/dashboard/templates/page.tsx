@@ -5,6 +5,7 @@ import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
 import { db } from "@/db/client";
 import { templateGallery } from "@/db/schema";
 import { defaultTemplateGallery } from "@/lib/template-gallery";
+import { parseStoredTags, serializeTags } from "@/lib/template-tags";
 import { eq, asc } from "drizzle-orm";
 
 export default async function TemplateGalleryPage() {
@@ -29,6 +30,8 @@ export default async function TemplateGalleryPage() {
       thumbnailUrl: templateGallery.thumbnailUrl,
       repoUrl: templateGallery.repoUrl,
       submittedBy: templateGallery.submittedBy,
+      submittedByUserId: templateGallery.submittedByUserId,
+      tags: templateGallery.tags,
     })
     .from(templateGallery)
     .where(eq(templateGallery.ownerUserId, user.id))
@@ -43,6 +46,8 @@ export default async function TemplateGalleryPage() {
       thumbnailUrl: template.thumbnailUrl ?? null,
       repoUrl: template.repoUrl ?? null,
       submittedBy: template.submittedBy ?? "OpenInvite",
+      submittedByUserId: null,
+      tags: serializeTags(template.tags ?? null),
     }));
     await db.insert(templateGallery).values(seeded);
     templates = seeded.map((template) => ({
@@ -52,8 +57,16 @@ export default async function TemplateGalleryPage() {
       thumbnailUrl: template.thumbnailUrl ?? null,
       repoUrl: template.repoUrl ?? null,
       submittedBy: template.submittedBy ?? null,
+      submittedByUserId: template.submittedByUserId ?? null,
+      tags: template.tags ?? null,
     }));
   }
+
+  const templatesWithPermissions = templates.map((template) => ({
+    ...template,
+    tags: parseStoredTags(template.tags ?? null),
+    canEdit: template.submittedByUserId === user.id,
+  }));
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
@@ -84,7 +97,7 @@ export default async function TemplateGalleryPage() {
             No templates registered yet.
           </div>
         ) : (
-          <TemplateGalleryClient templates={templates} />
+          <TemplateGalleryClient templates={templatesWithPermissions} />
         )}
       </main>
     </div>

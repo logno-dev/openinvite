@@ -5,6 +5,9 @@ export type TemplateGalleryItem = {
   thumbnailUrl?: string | null;
   repoUrl?: string | null;
   submittedBy?: string | null;
+  submittedByUserId?: string | null;
+  canEdit?: boolean;
+  tags?: string[] | null;
 };
 
 export const defaultTemplateGallery: TemplateGalleryItem[] = [
@@ -15,6 +18,7 @@ export const defaultTemplateGallery: TemplateGalleryItem[] = [
     thumbnailUrl: "/templates/thumbs/studio-minimal.svg",
     repoUrl: null,
     submittedBy: "OpenInvite",
+    tags: ["minimal", "editorial", "neutral"],
   },
   {
     id: "candlelight-modern",
@@ -23,6 +27,7 @@ export const defaultTemplateGallery: TemplateGalleryItem[] = [
     thumbnailUrl: "/templates/thumbs/candlelight-modern.svg",
     repoUrl: null,
     submittedBy: "OpenInvite",
+    tags: ["moody", "evening", "modern"],
   },
   {
     id: "garden-party",
@@ -31,5 +36,6 @@ export const defaultTemplateGallery: TemplateGalleryItem[] = [
     thumbnailUrl: "/templates/thumbs/garden-party.svg",
     repoUrl: null,
     submittedBy: "OpenInvite",
+    tags: ["garden", "airy", "botanical"],
   },
 ];

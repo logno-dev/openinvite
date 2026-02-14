@@ -60,6 +60,10 @@ export const templateGallery = sqliteTable("template_gallery", {
   thumbnailUrl: text("thumbnail_url"),
   repoUrl: text("repo_url"),
   submittedBy: text("submitted_by"),
+  submittedByUserId: text("submitted_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  tags: text("tags"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

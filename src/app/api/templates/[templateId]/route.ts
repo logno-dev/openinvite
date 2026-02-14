@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { templateGallery } from "@/db/schema";
+import { parseStoredTags, parseTagsInput, serializeTags } from "@/lib/template-tags";
 import { getSessionUser } from "@/lib/session";
 
 type TemplatePayload = {
@@ -9,6 +10,7 @@ type TemplatePayload = {
   url?: string;
   thumbnailUrl?: string | null;
   repoUrl?: string | null;
+  tags?: string[] | string | null;
 };
 
 type RouteParams = {
@@ -23,12 +25,31 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const { templateId } = await params;
 
+  const existing = await db
+    .select({
+      submittedByUserId: templateGallery.submittedByUserId,
+    })
+    .from(templateGallery)
+    .where(
+      and(eq(templateGallery.id, templateId), eq(templateGallery.ownerUserId, user.id))
+    )
+    .limit(1);
+
+  if (!existing[0]) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  }
+
+  if (existing[0].submittedByUserId !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = (await request.json()) as TemplatePayload;
   const updates: Partial<{
     name: string;
     url: string;
     thumbnailUrl: string | null;
     repoUrl: string | null;
+    tags: string | null;
   }> = {};
 
   if ("name" in body) {
@@ -55,6 +76,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     updates.repoUrl = body.repoUrl?.trim() || null;
   }
 
+  if ("tags" in body) {
+    updates.tags = serializeTags(parseTagsInput(body.tags));
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
@@ -74,6 +99,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       thumbnailUrl: templateGallery.thumbnailUrl,
       repoUrl: templateGallery.repoUrl,
       submittedBy: templateGallery.submittedBy,
+      submittedByUserId: templateGallery.submittedByUserId,
+      tags: templateGallery.tags,
     })
     .from(templateGallery)
     .where(
@@ -85,7 +112,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ template: updated[0] });
+  return NextResponse.json({
+    template: {
+      ...updated[0],
+      tags: parseStoredTags(updated[0].tags ?? null),
+      canEdit: true,
+    },
+  });
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
@@ -95,6 +128,24 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   }
 
   const { templateId } = await params;
+
+  const existing = await db
+    .select({
+      submittedByUserId: templateGallery.submittedByUserId,
+    })
+    .from(templateGallery)
+    .where(
+      and(eq(templateGallery.id, templateId), eq(templateGallery.ownerUserId, user.id))
+    )
+    .limit(1);
+
+  if (!existing[0]) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  }
+
+  if (existing[0].submittedByUserId !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await db
     .delete(templateGallery)
