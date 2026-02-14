@@ -27,10 +27,20 @@ type GuestGroup = {
   } | null;
 };
 
+type GuestChatMessage = {
+  id: string;
+  groupId: string | null;
+  message: string;
+  createdAt: string | null;
+  authorName: string;
+  authorRole?: "guest" | "host";
+};
+
 export default function GuestListPage() {
   const params = useParams();
   const invitationId = typeof params.invitationId === "string" ? params.invitationId : "";
   const [guestGroups, setGuestGroups] = useState<GuestGroup[]>([]);
+  const [chatMessages, setChatMessages] = useState<GuestChatMessage[]>([]);
   const [countMode, setCountMode] = useState<"split" | "total">("split");
   const [rsvpOptions, setRsvpOptions] = useState<Array<{ key: string; label: string }>>(
     []
@@ -73,6 +83,8 @@ export default function GuestListPage() {
   >({});
   const [bulkSendLoading, setBulkSendLoading] = useState(false);
   const [bulkSendIncludeSent, setBulkSendIncludeSent] = useState(false);
+  const [hostChatInput, setHostChatInput] = useState("");
+  const [hostChatSending, setHostChatSending] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -86,6 +98,7 @@ export default function GuestListPage() {
           setCountMode(guestData.countMode ?? "split");
           setRsvpOptions(guestData.rsvpOptions ?? []);
           setOpenRsvpToken(guestData.openRsvpToken ?? null);
+          setChatMessages(guestData.messages ?? []);
         }
       }
     }
@@ -322,7 +335,7 @@ export default function GuestListPage() {
     }
   }
 
-  async function sendInviteEmail(group: GuestGroup) {
+  async function sendGuestEmail(group: GuestGroup, mode: "invite" | "update") {
     if (!group.email) {
       setGuestMessage("Add an email address for this guest first.");
       return;
@@ -330,7 +343,7 @@ export default function GuestListPage() {
 
     setEmailSendState((prev) => ({ ...prev, [group.id]: "sending" }));
     const response = await fetch(
-      `/api/invitations/${invitationId}/guest-groups/${group.id}/send?mode=invite`,
+      `/api/invitations/${invitationId}/guest-groups/${group.id}/send?mode=${mode}`,
       { method: "POST" }
     );
     const contentType = response.headers.get("content-type") ?? "";
@@ -352,7 +365,7 @@ export default function GuestListPage() {
           ? {
               ...item,
               inviteEmailSentAt: new Date().toISOString(),
-              inviteEmailLastType: "invite",
+              inviteEmailLastType: mode,
             }
           : item
       )
@@ -406,6 +419,28 @@ export default function GuestListPage() {
     }
     setGuestMessage(`Sent ${data.sentCount ?? 0} email${data.sentCount === 1 ? "" : "s"}.`);
     setBulkSendLoading(false);
+  }
+
+  async function submitHostMessage(event: React.FormEvent) {
+    event.preventDefault();
+    const message = hostChatInput.trim();
+    if (!message) return;
+    setHostChatSending(true);
+    const response = await fetch(`/api/invitations/${invitationId}/guest-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    const data = contentType.includes("application/json") ? await response.json() : {};
+    if (!response.ok) {
+      setGuestMessage(data.error ?? "Failed to post message");
+      setHostChatSending(false);
+      return;
+    }
+    setChatMessages((prev) => [...prev, data.message as GuestChatMessage]);
+    setHostChatInput("");
+    setHostChatSending(false);
   }
 
   return (
@@ -552,6 +587,9 @@ export default function GuestListPage() {
               </button>
               <span>Include previously emailed guests</span>
             </div>
+            <span className="text-xs text-[var(--muted)]">
+              Updates always send to all guests with email addresses.
+            </span>
           </div>
 
           <form onSubmit={handleGuestSubmit} className="grid gap-4 md:grid-cols-2">
@@ -749,11 +787,21 @@ export default function GuestListPage() {
                       className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
                       type="button"
                       disabled={!group.email || emailSendState[group.id] === "sending"}
-                      onClick={() => sendInviteEmail(group)}
+                      onClick={() => sendGuestEmail(group, "invite")}
                     >
                       {emailSendState[group.id] === "sending"
                         ? "Sending..."
-                        : "Send email"}
+                        : "Send invite"}
+                    </button>
+                    <button
+                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+                      type="button"
+                      disabled={!group.email || emailSendState[group.id] === "sending"}
+                      onClick={() => sendGuestEmail(group, "update")}
+                    >
+                      {emailSendState[group.id] === "sending"
+                        ? "Sending..."
+                        : "Send update"}
                     </button>
                     <button
                       className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
@@ -1069,6 +1117,46 @@ export default function GuestListPage() {
               </div>
             ))
           )}
+        </section>
+
+        <section className="rounded-2xl border border-white/15 bg-white/5 p-5">
+          <h2 className="font-[var(--font-display)] text-3xl tracking-[0.08em]">
+            Guest chat
+          </h2>
+          <div className="mt-4 grid max-h-[320px] gap-3 overflow-y-auto pr-1">
+            {chatMessages.length > 0 ? (
+              chatMessages.map((entry) => (
+                <article
+                  key={entry.id}
+                  className="rounded-xl border border-white/10 bg-black/10 px-4 py-3"
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    {entry.authorName}
+                    {entry.authorRole === "host" ? " (Host)" : ""}
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--foreground)]">{entry.message}</p>
+                </article>
+              ))
+            ) : (
+              <p className="text-sm text-[var(--muted)]">No guest messages yet.</p>
+            )}
+          </div>
+          <form onSubmit={submitHostMessage} className="mt-4 grid gap-3">
+            <textarea
+              className="min-h-[90px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+              value={hostChatInput}
+              onChange={(event) => setHostChatInput(event.target.value)}
+              maxLength={500}
+              placeholder="Send a message to guests"
+            />
+            <button
+              type="submit"
+              disabled={hostChatSending}
+              className="w-fit rounded-full border border-[var(--accent)] bg-[var(--accent)]/20 px-5 py-2 text-sm font-semibold text-[var(--accent)]"
+            >
+              {hostChatSending ? "Sending..." : "Send message"}
+            </button>
+          </form>
         </section>
       </main>
     </div>

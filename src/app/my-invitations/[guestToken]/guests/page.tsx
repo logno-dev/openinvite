@@ -19,10 +19,11 @@ type GuestListItem = {
 
 type GuestMessage = {
   id: string;
-  groupId: string;
+  groupId: string | null;
   message: string;
   createdAt: string | null;
   authorName: string;
+  authorRole?: "guest" | "host";
 };
 
 type GuestListPayload = {
@@ -162,6 +163,7 @@ export default function InvitationGuestListPage() {
                 <article key={entry.id} className="rounded-xl border border-white/10 bg-black/10 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                     {entry.authorName}
+                    {entry.authorRole === "host" ? " (Host)" : ""}
                   </p>
                   <p className="mt-1 text-sm text-[var(--foreground)]">{entry.message}</p>
                 </article>

@@ -3,10 +3,13 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   guestGroups,
+  invitationGuestMessages,
+  invitationHostMessages,
   invitationHosts,
   invitations,
   rsvpOptions,
   rsvpResponses,
+  users,
 } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 
@@ -111,11 +114,61 @@ export async function GET(
     .from(rsvpOptions)
     .where(eq(rsvpOptions.invitationId, invitationId));
 
+  const messages = await db
+    .select({
+      id: invitationGuestMessages.id,
+      groupId: invitationGuestMessages.groupId,
+      message: invitationGuestMessages.message,
+      createdAt: invitationGuestMessages.createdAt,
+      authorName: guestGroups.displayName,
+    })
+    .from(invitationGuestMessages)
+    .innerJoin(guestGroups, eq(guestGroups.id, invitationGuestMessages.groupId))
+    .where(eq(invitationGuestMessages.invitationId, invitationId));
+
+  const hostMessages = await db
+    .select({
+      id: invitationHostMessages.id,
+      message: invitationHostMessages.message,
+      createdAt: invitationHostMessages.createdAt,
+      authorName: users.displayName,
+      fallbackEmail: users.email,
+    })
+    .from(invitationHostMessages)
+    .innerJoin(users, eq(users.id, invitationHostMessages.userId))
+    .where(eq(invitationHostMessages.invitationId, invitationId));
+
+  function toEpoch(value: unknown) {
+    if (!value) return 0;
+    if (value instanceof Date) return value.getTime();
+    return new Date(String(value)).getTime();
+  }
+
+  const mergedMessages = [
+    ...messages.map((message) => ({
+      ...message,
+      authorRole: "guest" as const,
+    })),
+    ...hostMessages.map((message) => ({
+      id: message.id,
+      groupId: null,
+      message: message.message,
+      createdAt: message.createdAt,
+      authorName: message.authorName || message.fallbackEmail,
+      authorRole: "host" as const,
+    })),
+  ].sort((a, b) => {
+    const at = toEpoch(a.createdAt);
+    const bt = toEpoch(b.createdAt);
+    return at - bt;
+  });
+
   return NextResponse.json({
     guestGroups: enriched,
     countMode: invitation[0]?.countMode ?? "split",
     rsvpOptions: options,
     openRsvpToken: invitation[0]?.openRsvpToken ?? null,
+    messages: mergedMessages,
   });
 }
 

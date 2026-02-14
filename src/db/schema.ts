@@ -213,6 +213,20 @@ export const invitationGuestMessages = sqliteTable("invitation_guest_messages", 
     .default(sql`(CURRENT_TIMESTAMP)`),
 });
 
+export const invitationHostMessages = sqliteTable("invitation_host_messages", {
+  id: text("id").primaryKey(),
+  invitationId: text("invitation_id")
+    .notNull()
+    .references(() => invitations.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+});
+
 export const passwordResetTokens = sqliteTable("password_reset_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id")

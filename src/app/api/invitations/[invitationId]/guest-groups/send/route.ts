@@ -41,8 +41,8 @@ export async function POST(
   }
 
   const body = (await request.json()) as Payload;
-  const includeAlreadySent = body.includeAlreadySent ?? false;
   const mode = body.mode === "update" ? "update" : "invite";
+  const includeAlreadySent = mode === "update" ? true : body.includeAlreadySent ?? false;
 
   const invitation = await db
     .select({

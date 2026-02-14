@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import {
   guestGroups,
   invitationGuestMessages,
+  invitationHostMessages,
   invitations,
   rsvpOptions,
   rsvpResponses,
@@ -140,11 +141,42 @@ export async function GET(
     .where(eq(invitationGuestMessages.invitationId, access.invitationId))
     .orderBy(asc(invitationGuestMessages.createdAt));
 
+  const hostMessages = await db
+    .select({
+      id: invitationHostMessages.id,
+      message: invitationHostMessages.message,
+      createdAt: invitationHostMessages.createdAt,
+      authorName: users.displayName,
+      fallbackEmail: users.email,
+    })
+    .from(invitationHostMessages)
+    .innerJoin(users, eq(users.id, invitationHostMessages.userId))
+    .where(eq(invitationHostMessages.invitationId, access.invitationId))
+    .orderBy(asc(invitationHostMessages.createdAt));
+
+  function toEpoch(value: unknown) {
+    if (!value) return 0;
+    if (value instanceof Date) return value.getTime();
+    return new Date(String(value)).getTime();
+  }
+
+  const mergedMessages = [
+    ...messages.map((message) => ({ ...message, authorRole: "guest" as const })),
+    ...hostMessages.map((message) => ({
+      id: message.id,
+      groupId: null,
+      message: message.message,
+      createdAt: message.createdAt,
+      authorName: message.authorName || message.fallbackEmail,
+      authorRole: "host" as const,
+    })),
+  ].sort((a, b) => toEpoch(a.createdAt) - toEpoch(b.createdAt));
+
   return NextResponse.json({
     invitationTitle: access.invitationTitle,
     countMode: access.countMode,
     guestList,
-    messages,
+    messages: mergedMessages,
   });
 }
 
@@ -187,6 +219,7 @@ export async function POST(
       message,
       createdAt,
       authorName: access.viewerDisplayName,
+      authorRole: "guest",
     },
   });
 }
