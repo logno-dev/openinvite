@@ -14,6 +14,8 @@ type TopNavProps = {
 export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const settingsLink = links.find((link) => link.href === "/settings");
+  const navLinks = links.filter((link) => link.href !== "/settings");
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0a14]/75 backdrop-blur">
@@ -33,7 +35,7 @@ export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProp
         </Link>
 
         <nav className="hidden items-center gap-3 md:flex">
-          {links.map((link) => {
+          {navLinks.map((link) => {
             const active = pathname === link.href;
             const isPrimaryAction = link.href === "/dashboard/invitations/new";
             return (
@@ -59,6 +61,33 @@ export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProp
             );
           })}
           {showLogout ? <LogoutButton /> : null}
+          {settingsLink ? (
+            <Link
+              href={settingsLink.href}
+              aria-label="Settings"
+              className={`rounded-full border p-2 transition ${
+                pathname === settingsLink.href
+                  ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
+                  : "border-white/25 bg-white/5 text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span className="sr-only">Settings</span>
+            </Link>
+          ) : null}
         </nav>
 
         <button
@@ -90,7 +119,7 @@ export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProp
       {open ? (
         <div className="border-t border-white/10 bg-[#0a0a14]/90 px-6 py-4 md:hidden">
           <div className="flex flex-col gap-2">
-            {links.map((link) => {
+            {navLinks.map((link) => {
               const active = pathname === link.href;
               const isPrimaryAction = link.href === "/dashboard/invitations/new";
               return (
@@ -117,6 +146,34 @@ export default function TopNav({ links, homeHref = "/", showLogout }: TopNavProp
               );
             })}
             {showLogout ? <LogoutButton /> : null}
+            {settingsLink ? (
+              <Link
+                href={settingsLink.href}
+                aria-label="Settings"
+                className={`w-fit rounded-full border p-2 ${
+                  pathname === settingsLink.href
+                    ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
+                    : "border-white/25 bg-white/5 text-[var(--muted)]"
+                }`}
+                onClick={() => setOpen(false)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span className="sr-only">Settings</span>
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}

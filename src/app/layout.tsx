@@ -16,6 +16,10 @@ const body = Space_Grotesk({
 export const metadata: Metadata = {
   title: "OpenInvite",
   description: "A personal invitation and RSVP experience.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({
