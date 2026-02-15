@@ -8,7 +8,7 @@ export default function DocsSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-white/5 p-6">
+    <aside className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-white/5 p-6 lg:min-h-0 lg:overflow-y-auto">
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Docs</p>
         <h2 className="mt-2 font-[var(--font-display)] text-lg tracking-[0.2em] text-[var(--foreground)]">
