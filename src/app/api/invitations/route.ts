@@ -4,6 +4,8 @@ import { db } from "@/db/client";
 import {
   invitationDetails,
   invitationHosts,
+  invitationTouchpointDetails,
+  invitationTouchpoints,
   invitations,
   rsvpOptions,
 } from "@/db/schema";
@@ -99,6 +101,37 @@ export async function POST(request: NextRequest) {
 
   await db.insert(invitationDetails).values({
     invitationId,
+    date: body.date?.trim() || null,
+    time: body.time?.trim() || null,
+    eventDate: body.eventDate?.trim() || null,
+    eventTime: body.eventTime?.trim() || null,
+    dateFormat: body.dateFormat?.trim() || null,
+    timeFormat: body.timeFormat?.trim() || null,
+    locationName: body.locationName?.trim() || null,
+    address: body.address?.trim() || null,
+    mapLink: body.mapLink?.trim() || null,
+    registryLink: body.registryLink?.trim() || null,
+    mapEmbed: body.mapEmbed?.trim() || null,
+    notes: body.notes?.trim() || null,
+    notes2: body.notes2?.trim() || null,
+    notes3: body.notes3?.trim() || null,
+  });
+
+  const touchpointId = crypto.randomUUID();
+  await db.insert(invitationTouchpoints).values({
+    id: touchpointId,
+    invitationId,
+    kind: "invitation",
+    name: "Invitation",
+    title,
+    collectRsvp: true,
+    templateUrlDraft: draftUrl,
+    templateUrlLive: liveUrl,
+    isActive: true,
+  });
+
+  await db.insert(invitationTouchpointDetails).values({
+    touchpointId,
     date: body.date?.trim() || null,
     time: body.time?.trim() || null,
     eventDate: body.eventDate?.trim() || null,

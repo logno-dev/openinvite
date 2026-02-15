@@ -27,6 +27,7 @@ type InvitationForm = {
   timezone: string;
   countMode: "split" | "total";
   shareGuestList: boolean;
+  collectRsvp: boolean;
   rsvpYes: string;
   rsvpNo: string;
   rsvpMaybe: string;
@@ -63,6 +64,32 @@ type InvitationResponse = {
     notes3: string | null;
   } | null;
   rsvpOptions: Array<{ key: string; label: string }>;
+  touchpoints?: Array<{
+    id: string;
+    kind: "invitation" | "save_the_date" | string;
+    name: string;
+    title: string | null;
+    collectRsvp: boolean;
+    templateUrlDraft: string | null;
+    templateUrlLive: string | null;
+    isActive: boolean;
+    details: {
+      date: string | null;
+      time: string | null;
+      eventDate: string | null;
+      eventTime: string | null;
+      dateFormat: string | null;
+      timeFormat: string | null;
+      locationName: string | null;
+      address: string | null;
+      mapLink: string | null;
+      registryLink: string | null;
+      mapEmbed: string | null;
+      notes: string | null;
+      notes2: string | null;
+      notes3: string | null;
+    } | null;
+  }>;
   hosts: Array<{
     id: string;
     userId: string;
@@ -92,6 +119,75 @@ export default function EditInvitationPage() {
     "idle" | "copied" | "error"
   >("idle");
   const [hostNotifications, setHostNotifications] = useState<HostNotification[]>([]);
+  const [activeTouchpointKind, setActiveTouchpointKind] = useState<
+    "invitation" | "save_the_date"
+  >("invitation");
+  const [touchpointsByKind, setTouchpointsByKind] = useState<
+    Record<"invitation" | "save_the_date", {
+      name: string;
+      title: string;
+      collectRsvp: boolean;
+      templateUrlDraft: string;
+      templateUrlLive: string;
+      date: string;
+      time: string;
+      eventDate: string;
+      eventTime: string;
+      dateFormat: string;
+      timeFormat: string;
+      locationName: string;
+      address: string;
+      mapLink: string;
+      registryLink: string;
+      mapEmbed: string;
+      notes: string;
+      notes2: string;
+      notes3: string;
+    }>
+  >({
+    invitation: {
+      name: "Invitation",
+      title: "",
+      collectRsvp: true,
+      templateUrlDraft: "",
+      templateUrlLive: "",
+      date: "",
+      time: "",
+      eventDate: "",
+      eventTime: "",
+      dateFormat: "MMM d, yyyy",
+      timeFormat: "h:mm a",
+      locationName: "",
+      address: "",
+      mapLink: "",
+      registryLink: "",
+      mapEmbed: "",
+      notes: "",
+      notes2: "",
+      notes3: "",
+    },
+    save_the_date: {
+      name: "Save the Date",
+      title: "",
+      collectRsvp: false,
+      templateUrlDraft: "",
+      templateUrlLive: "",
+      date: "",
+      time: "",
+      eventDate: "",
+      eventTime: "",
+      dateFormat: "MMM d, yyyy",
+      timeFormat: "h:mm a",
+      locationName: "",
+      address: "",
+      mapLink: "",
+      registryLink: "",
+      mapEmbed: "",
+      notes: "",
+      notes2: "",
+      notes3: "",
+    },
+  });
   const timezoneOptions: string[] = form
     ? form.timezone &&
       !commonTimezones.includes(form.timezone as (typeof commonTimezones)[number])
@@ -120,27 +216,89 @@ export default function EditInvitationPage() {
       const rsvpMaybe =
         data.rsvpOptions.find((opt) => opt.key === "maybe")?.label ?? "";
 
+      const invitationTouchpoint = data.touchpoints?.find((tp) => tp.kind === "invitation");
+      const saveTheDateTouchpoint = data.touchpoints?.find(
+        (tp) => tp.kind === "save_the_date"
+      );
+
+      const invitationPoint = {
+        name: invitationTouchpoint?.name ?? "Invitation",
+        title: invitationTouchpoint?.title ?? data.invitation.title,
+        collectRsvp: invitationTouchpoint?.collectRsvp ?? true,
+        templateUrlDraft:
+          invitationTouchpoint?.templateUrlDraft ?? data.invitation.templateUrlDraft ?? "",
+        templateUrlLive:
+          invitationTouchpoint?.templateUrlLive ?? data.invitation.templateUrlLive ?? "",
+        date: invitationTouchpoint?.details?.date ?? data.details?.date ?? "",
+        time: invitationTouchpoint?.details?.time ?? data.details?.time ?? "",
+        eventDate: invitationTouchpoint?.details?.eventDate ?? data.details?.eventDate ?? "",
+        eventTime: invitationTouchpoint?.details?.eventTime ?? data.details?.eventTime ?? "",
+        dateFormat:
+          invitationTouchpoint?.details?.dateFormat ?? data.details?.dateFormat ?? "MMM d, yyyy",
+        timeFormat:
+          invitationTouchpoint?.details?.timeFormat ?? data.details?.timeFormat ?? "h:mm a",
+        locationName:
+          invitationTouchpoint?.details?.locationName ?? data.details?.locationName ?? "",
+        address: invitationTouchpoint?.details?.address ?? data.details?.address ?? "",
+        mapLink: invitationTouchpoint?.details?.mapLink ?? data.details?.mapLink ?? "",
+        registryLink:
+          invitationTouchpoint?.details?.registryLink ?? data.details?.registryLink ?? "",
+        mapEmbed: invitationTouchpoint?.details?.mapEmbed ?? data.details?.mapEmbed ?? "",
+        notes: invitationTouchpoint?.details?.notes ?? data.details?.notes ?? "",
+        notes2: invitationTouchpoint?.details?.notes2 ?? data.details?.notes2 ?? "",
+        notes3: invitationTouchpoint?.details?.notes3 ?? data.details?.notes3 ?? "",
+      };
+
+      const saveTheDatePoint = {
+        name: saveTheDateTouchpoint?.name ?? "Save the Date",
+        title: saveTheDateTouchpoint?.title ?? "",
+        collectRsvp: saveTheDateTouchpoint?.collectRsvp ?? false,
+        templateUrlDraft: saveTheDateTouchpoint?.templateUrlDraft ?? "",
+        templateUrlLive: saveTheDateTouchpoint?.templateUrlLive ?? "",
+        date: saveTheDateTouchpoint?.details?.date ?? "",
+        time: saveTheDateTouchpoint?.details?.time ?? "",
+        eventDate: saveTheDateTouchpoint?.details?.eventDate ?? "",
+        eventTime: saveTheDateTouchpoint?.details?.eventTime ?? "",
+        dateFormat: saveTheDateTouchpoint?.details?.dateFormat ?? "MMM d, yyyy",
+        timeFormat: saveTheDateTouchpoint?.details?.timeFormat ?? "h:mm a",
+        locationName: saveTheDateTouchpoint?.details?.locationName ?? "",
+        address: saveTheDateTouchpoint?.details?.address ?? "",
+        mapLink: saveTheDateTouchpoint?.details?.mapLink ?? "",
+        registryLink: saveTheDateTouchpoint?.details?.registryLink ?? "",
+        mapEmbed: saveTheDateTouchpoint?.details?.mapEmbed ?? "",
+        notes: saveTheDateTouchpoint?.details?.notes ?? "",
+        notes2: saveTheDateTouchpoint?.details?.notes2 ?? "",
+        notes3: saveTheDateTouchpoint?.details?.notes3 ?? "",
+      };
+
+      setTouchpointsByKind({
+        invitation: invitationPoint,
+        save_the_date: saveTheDatePoint,
+      });
+      setActiveTouchpointKind("invitation");
+
       setForm({
-        title: data.invitation.title,
-        templateUrlDraft: data.invitation.templateUrlDraft ?? "",
-        templateUrlLive: data.invitation.templateUrlLive ?? "",
-        date: data.details?.date ?? "",
-        time: data.details?.time ?? "",
-        eventDate: data.details?.eventDate ?? "",
-        eventTime: data.details?.eventTime ?? "",
-        dateFormat: data.details?.dateFormat ?? "MMM d, yyyy",
-        timeFormat: data.details?.timeFormat ?? "h:mm a",
-        locationName: data.details?.locationName ?? "",
-        address: data.details?.address ?? "",
-        mapLink: data.details?.mapLink ?? "",
-        registryLink: data.details?.registryLink ?? "",
-        mapEmbed: data.details?.mapEmbed ?? "",
-        notes: data.details?.notes ?? "",
-        notes2: data.details?.notes2 ?? "",
-        notes3: data.details?.notes3 ?? "",
+        title: invitationPoint.title,
+        templateUrlDraft: invitationPoint.templateUrlDraft,
+        templateUrlLive: invitationPoint.templateUrlLive,
+        date: invitationPoint.date,
+        time: invitationPoint.time,
+        eventDate: invitationPoint.eventDate,
+        eventTime: invitationPoint.eventTime,
+        dateFormat: invitationPoint.dateFormat,
+        timeFormat: invitationPoint.timeFormat,
+        locationName: invitationPoint.locationName,
+        address: invitationPoint.address,
+        mapLink: invitationPoint.mapLink,
+        registryLink: invitationPoint.registryLink,
+        mapEmbed: invitationPoint.mapEmbed,
+        notes: invitationPoint.notes,
+        notes2: invitationPoint.notes2,
+        notes3: invitationPoint.notes3,
         timezone: data.invitation.timezone,
         countMode: data.invitation.countMode,
         shareGuestList: data.invitation.shareGuestList,
+        collectRsvp: invitationPoint.collectRsvp,
         rsvpYes,
         rsvpNo,
         rsvpMaybe,
@@ -164,6 +322,63 @@ export default function EditInvitationPage() {
   function updateField<K extends keyof InvitationForm>(key: K, value: InvitationForm[K]) {
     if (!form) return;
     setForm({ ...form, [key]: value });
+
+    const touchpointKeys = new Set<keyof InvitationForm>([
+      "title",
+      "templateUrlDraft",
+      "templateUrlLive",
+      "date",
+      "time",
+      "eventDate",
+      "eventTime",
+      "dateFormat",
+      "timeFormat",
+      "locationName",
+      "address",
+      "mapLink",
+      "registryLink",
+      "mapEmbed",
+      "notes",
+      "notes2",
+      "notes3",
+      "collectRsvp",
+    ]);
+    if (touchpointKeys.has(key)) {
+      setTouchpointsByKind((prev) => ({
+        ...prev,
+        [activeTouchpointKind]: {
+          ...prev[activeTouchpointKind],
+          [key]: value,
+        },
+      }));
+    }
+  }
+
+  function switchTouchpoint(kind: "invitation" | "save_the_date") {
+    if (!form) return;
+    const point = touchpointsByKind[kind];
+    setActiveTouchpointKind(kind);
+    setForm({
+      ...form,
+      templateUrlDraft: point.templateUrlDraft,
+      templateUrlLive: point.templateUrlLive,
+      title: point.title,
+      date: point.date,
+      time: point.time,
+      eventDate: point.eventDate,
+      eventTime: point.eventTime,
+      dateFormat: point.dateFormat,
+      timeFormat: point.timeFormat,
+      locationName: point.locationName,
+      address: point.address,
+      mapLink: point.mapLink,
+      registryLink: point.registryLink,
+      mapEmbed: point.mapEmbed,
+      notes: point.notes,
+      notes2: point.notes2,
+      notes3: point.notes3,
+      collectRsvp: point.collectRsvp,
+    });
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -196,6 +411,9 @@ export default function EditInvitationPage() {
         timezone: form.timezone,
         countMode: form.countMode,
         shareGuestList: form.shareGuestList,
+        touchpointKind: activeTouchpointKind,
+        touchpointName: touchpointsByKind[activeTouchpointKind].name,
+        collectRsvp: form.collectRsvp,
         rsvpOptions: [
           { key: "yes", label: form.rsvpYes },
           { key: "no", label: form.rsvpNo },
@@ -217,6 +435,30 @@ export default function EditInvitationPage() {
     }
 
     setMessage("Invitation updated.");
+    setTouchpointsByKind((prev) => ({
+      ...prev,
+      [activeTouchpointKind]: {
+        ...prev[activeTouchpointKind],
+        title: form.title,
+        templateUrlDraft: form.templateUrlDraft,
+        templateUrlLive: form.templateUrlLive,
+        date: form.date,
+        time: form.time,
+        eventDate: form.eventDate,
+        eventTime: form.eventTime,
+        dateFormat: form.dateFormat,
+        timeFormat: form.timeFormat,
+        locationName: form.locationName,
+        address: form.address,
+        mapLink: form.mapLink,
+        registryLink: form.registryLink,
+        mapEmbed: form.mapEmbed,
+        notes: form.notes,
+        notes2: form.notes2,
+        notes3: form.notes3,
+        collectRsvp: form.collectRsvp,
+      },
+    }));
     setSaving(false);
   }
 
@@ -299,6 +541,50 @@ export default function EditInvitationPage() {
           onSubmit={handleSubmit}
           className="grid gap-6 overflow-x-hidden rounded-3xl border border-white/15 bg-white/5 p-4 sm:p-6 [&_div]:max-w-full [&_div]:min-w-0 [&_section]:max-w-full [&_section]:min-w-0 [&_input]:max-w-full [&_input]:min-w-0 [&_input]:w-full [&_select]:max-w-full [&_select]:min-w-0 [&_select]:w-full [&_textarea]:max-w-full [&_textarea]:min-w-0 [&_textarea]:w-full"
         >
+          <section className="grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
+              Touchpoint
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.18em] ${
+                  activeTouchpointKind === "invitation"
+                    ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
+                    : "border-white/20 bg-white/5 text-[var(--muted)]"
+                }`}
+                onClick={() => switchTouchpoint("invitation")}
+              >
+                Invitation
+              </button>
+              <button
+                type="button"
+                className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.18em] ${
+                  activeTouchpointKind === "save_the_date"
+                    ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
+                    : "border-white/20 bg-white/5 text-[var(--muted)]"
+                }`}
+                onClick={() => switchTouchpoint("save_the_date")}
+              >
+                Save the date
+              </button>
+            </div>
+            <div className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+              <span className="min-w-0 flex-1 text-sm leading-5 text-[var(--foreground)]">
+                Collect RSVP responses for this touchpoint
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.collectRsvp}
+                onClick={() => updateField("collectRsvp", !form.collectRsvp)}
+                className="oi-toggle shrink-0"
+              >
+                <span className="oi-toggle-thumb" />
+              </button>
+            </div>
+          </section>
+
           <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -474,6 +760,7 @@ export default function EditInvitationPage() {
             </div>
           </div>
 
+          {activeTouchpointKind === "invitation" ? (
           <div className="grid gap-4 md:grid-cols-3 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -506,6 +793,7 @@ export default function EditInvitationPage() {
               />
             </div>
           </div>
+          ) : null}
 
           <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
@@ -572,7 +860,7 @@ export default function EditInvitationPage() {
             {form.previewToken && form.templateUrlLive ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-                href={`/preview-client/${form.previewToken}?mode=guest&source=live`}
+                href={`/preview-client/${form.previewToken}?mode=${form.collectRsvp ? "guest" : "open"}&source=live&kind=${activeTouchpointKind}`}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -582,7 +870,7 @@ export default function EditInvitationPage() {
             {form.previewToken && form.templateUrlDraft ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-                href={`/preview-client/${form.previewToken}?mode=guest&source=draft`}
+                href={`/preview-client/${form.previewToken}?mode=${form.collectRsvp ? "guest" : "open"}&source=draft&kind=${activeTouchpointKind}`}
                 target="_blank"
                 rel="noreferrer"
               >

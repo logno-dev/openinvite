@@ -93,6 +93,14 @@ export type PreviewPayload = {
     notes2: string | null;
     notes3: string | null;
   } | null;
+  touchpoint?: {
+    id: string | null;
+    kind: string;
+    name: string;
+    collectRsvp: boolean;
+    templateUrlDraft: string | null;
+    templateUrlLive: string | null;
+  } | null;
   hostNames: string[];
   rsvpOptions: Array<{ key: string; label: string }>;
 };
@@ -188,6 +196,10 @@ export function applyPreviewDataToHtml(
 
   const responseEl = doc.getElementById("response");
   if (responseEl) {
+    const collectRsvp = data.touchpoint?.collectRsvp ?? true;
+    if (!collectRsvp) {
+      responseEl.remove();
+    } else {
     const responseHtml =
       mode === "guest"
         ? renderRsvpForm({
@@ -209,6 +221,7 @@ export function applyPreviewDataToHtml(
             countMode: data.invitation.countMode === "total" ? "total" : "split",
           });
     responseEl.innerHTML = responseHtml;
+    }
   }
 
   const calendarEl = doc.getElementById("calendar_link");

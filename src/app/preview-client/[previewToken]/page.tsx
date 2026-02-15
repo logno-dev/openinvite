@@ -10,6 +10,10 @@ export default function PreviewClientPage() {
   const token = typeof params.previewToken === "string" ? params.previewToken : "";
   const mode = (searchParams.get("mode") ?? "open") === "guest" ? "guest" : "open";
   const source = (searchParams.get("source") ?? "live") === "draft" ? "draft" : "live";
+  const kind =
+    (searchParams.get("kind") ?? "invitation") === "save_the_date"
+      ? "save_the_date"
+      : "invitation";
   const [payload, setPayload] = useState<PreviewPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [html, setHtml] = useState<string | null>(null);
@@ -17,7 +21,7 @@ export default function PreviewClientPage() {
   useEffect(() => {
     async function load() {
       if (!token) return;
-      const response = await fetch(`/api/preview/${token}`);
+      const response = await fetch(`/api/preview/${token}?kind=${kind}`);
       const data = await response.json();
       if (!response.ok) {
         setError(data.error ?? "Preview not found");
@@ -27,15 +31,15 @@ export default function PreviewClientPage() {
     }
 
     load();
-  }, [token]);
+  }, [token, kind]);
 
   useEffect(() => {
     async function render() {
       if (!payload) return;
       const templateUrl =
         source === "draft"
-          ? payload.invitation.templateUrlDraft
-          : payload.invitation.templateUrlLive;
+          ? payload.touchpoint?.templateUrlDraft ?? payload.invitation.templateUrlDraft
+          : payload.touchpoint?.templateUrlLive ?? payload.invitation.templateUrlLive;
       if (!templateUrl) {
         setError(
           source === "draft"
@@ -62,8 +66,8 @@ export default function PreviewClientPage() {
     render();
   }, [payload, mode, source]);
 
-  const guestUrl = useMemo(() => `?mode=guest&source=${source}`, [source]);
-  const openUrl = useMemo(() => `?mode=open&source=${source}`, [source]);
+  const guestUrl = useMemo(() => `?mode=guest&source=${source}&kind=${kind}`, [source, kind]);
+  const openUrl = useMemo(() => `?mode=open&source=${source}&kind=${kind}`, [source, kind]);
 
   return (
     <div className="min-h-screen bg-[#0a0a14] text-[var(--foreground)]">
@@ -71,7 +75,7 @@ export default function PreviewClientPage() {
         <div className="flex items-center gap-2">
           <span className="font-semibold">Client preview</span>
           <span className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-            {mode === "guest" ? "Guest" : "Open"} · {source === "draft" ? "Draft" : "Live"}
+            {mode === "guest" ? "Guest" : "Open"} · {source === "draft" ? "Draft" : "Live"} · {kind === "save_the_date" ? "Save the Date" : "Invitation"}
           </span>
         </div>
         <div className="flex items-center gap-2">

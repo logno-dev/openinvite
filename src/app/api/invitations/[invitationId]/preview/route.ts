@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import {
-  invitationDetails,
-  invitationHosts,
-  invitations,
-  rsvpOptions,
-} from "@/db/schema";
+import { invitationHosts, invitations, rsvpOptions } from "@/db/schema";
 import { users } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { formatDate, formatTime } from "@/lib/date-format";
 import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
+import { getResolvedTouchpoint } from "@/lib/touchpoints";
 
 export const runtime = "nodejs";
 
@@ -55,16 +51,11 @@ export async function GET(
   }
 
   const record = invitation[0];
-  const templateUrlDraft = record.templateUrlDraft;
+  const touchpoint = await getResolvedTouchpoint(record.id, "invitation");
+  const templateUrlDraft = touchpoint?.templateUrlDraft ?? record.templateUrlDraft;
   if (!templateUrlDraft) {
     return NextResponse.json({ error: "Template URL missing" }, { status: 400 });
   }
-
-  const details = await db
-    .select()
-    .from(invitationDetails)
-    .where(eq(invitationDetails.invitationId, record.id))
-    .limit(1);
 
   const hostNames = await db
     .select({ name: users.displayName })
@@ -79,17 +70,11 @@ export async function GET(
 
   const html = await fetchTemplate(templateUrlDraft);
   const sanitized = sanitizeTemplate(html);
-  const dateValue =
-    details[0]?.eventDate ??
-    details[0]?.date ??
-    null;
-  const timeValue =
-    details[0]?.eventTime ??
-    details[0]?.time ??
-    null;
+  const dateValue = touchpoint?.details.eventDate ?? touchpoint?.details.date ?? null;
+  const timeValue = touchpoint?.details.eventTime ?? touchpoint?.details.time ?? null;
   const formattedDate = formatDate(
     dateValue,
-    (details[0]?.dateFormat ?? "MMM d, yyyy") as
+    (touchpoint?.details.dateFormat ?? "MMM d, yyyy") as
       | "MMM d, yyyy"
       | "MMMM d, yyyy"
       | "EEE, MMM d"
@@ -97,21 +82,21 @@ export async function GET(
   );
   const formattedTime = formatTime(
     timeValue,
-    (details[0]?.timeFormat ?? "h:mm a") as "h:mm a" | "h a" | "HH:mm"
+    (touchpoint?.details.timeFormat ?? "h:mm a") as "h:mm a" | "h a" | "HH:mm"
   );
 
   const injected = injectTemplateData(sanitized, {
-    title: record.title,
+    title: touchpoint?.title ?? record.title,
     date: formattedDate,
     time: formattedTime,
-    locationName: details[0]?.locationName ?? null,
-    address: details[0]?.address ?? null,
-    mapLink: details[0]?.mapLink ?? null,
-    registryLink: details[0]?.registryLink ?? null,
-    mapEmbed: details[0]?.mapEmbed ?? null,
-    notes: details[0]?.notes ?? null,
-    notes2: details[0]?.notes2 ?? null,
-    notes3: details[0]?.notes3 ?? null,
+    locationName: touchpoint?.details.locationName ?? null,
+    address: touchpoint?.details.address ?? null,
+    mapLink: touchpoint?.details.mapLink ?? null,
+    registryLink: touchpoint?.details.registryLink ?? null,
+    mapEmbed: touchpoint?.details.mapEmbed ?? null,
+    notes: touchpoint?.details.notes ?? null,
+    notes2: touchpoint?.details.notes2 ?? null,
+    notes3: touchpoint?.details.notes3 ?? null,
     hostNames: hostNames
       .map((host) => host.name)
       .filter(Boolean)

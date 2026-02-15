@@ -13,6 +13,7 @@ import {
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
 import { isMailerConfigured, sendMail } from "@/lib/mailer";
 import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
+import { getResolvedTouchpoint } from "@/lib/touchpoints";
 
 export const runtime = "nodejs";
 
@@ -225,6 +226,14 @@ export async function POST(request: Request) {
 
   if (!invitationId || !groupId) {
     return NextResponse.json({ error: "Invalid RSVP" }, { status: 400 });
+  }
+
+  const touchpoint = await getResolvedTouchpoint(invitationId, "invitation");
+  if (touchpoint && !touchpoint.collectRsvp) {
+    return NextResponse.json(
+      { error: "RSVP is disabled for this invitation" },
+      { status: 400 }
+    );
   }
 
   const invitationConfig = await db

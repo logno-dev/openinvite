@@ -4,6 +4,8 @@ import { db } from "@/db/client";
 import {
   invitationDetails,
   invitationHosts,
+  invitationTouchpointDetails,
+  invitationTouchpoints,
   invitations,
   rsvpOptions,
   users,
@@ -34,6 +36,9 @@ type UpdateInvitationPayload = {
   notes2?: string | null;
   notes3?: string | null;
   rsvpOptions?: Array<{ key: string; label: string }>;
+  touchpointKind?: "invitation" | "save_the_date";
+  touchpointName?: string;
+  collectRsvp?: boolean;
 };
 
 async function assertTemplateUrl(url: string, label: string) {
@@ -69,9 +74,10 @@ export async function PATCH(
   }
 
   const body = (await request.json()) as UpdateInvitationPayload;
+  const touchpointKind = body.touchpointKind ?? "invitation";
 
   const invitationUpdate: Partial<typeof invitations.$inferInsert> = {};
-  if (body.title !== undefined) {
+  if (body.title !== undefined && touchpointKind === "invitation") {
     invitationUpdate.title = body.title.trim();
   }
   if (body.timezone !== undefined) {
@@ -83,10 +89,10 @@ export async function PATCH(
   if (body.shareGuestList !== undefined) {
     invitationUpdate.shareGuestList = body.shareGuestList;
   }
-  if (body.templateUrlDraft !== undefined) {
+  if (body.templateUrlDraft !== undefined && touchpointKind === "invitation") {
     invitationUpdate.templateUrlDraft = body.templateUrlDraft?.trim() || null;
   }
-  if (body.templateUrlLive !== undefined) {
+  if (body.templateUrlLive !== undefined && touchpointKind === "invitation") {
     invitationUpdate.templateUrlLive = body.templateUrlLive?.trim() || null;
   }
 
@@ -96,6 +102,13 @@ export async function PATCH(
     }
     if (invitationUpdate.templateUrlLive) {
       await assertTemplateUrl(invitationUpdate.templateUrlLive, "Live");
+    }
+    if (
+      touchpointKind !== "invitation" &&
+      body.templateUrlLive !== undefined &&
+      body.templateUrlLive?.trim()
+    ) {
+      await assertTemplateUrl(body.templateUrlLive.trim(), "Live");
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Template not reachable";
@@ -112,7 +125,7 @@ export async function PATCH(
       .where(eq(invitations.id, invitationId));
   }
 
-  if (
+  const hasTouchpointDetailChanges =
     body.date !== undefined ||
     body.time !== undefined ||
     body.eventDate !== undefined ||
@@ -126,8 +139,9 @@ export async function PATCH(
       body.mapEmbed !== undefined ||
       body.notes !== undefined ||
     body.notes2 !== undefined ||
-    body.notes3 !== undefined
-  ) {
+    body.notes3 !== undefined;
+
+  if (touchpointKind === "invitation" && hasTouchpointDetailChanges) {
     await db
       .insert(invitationDetails)
       .values({
@@ -166,6 +180,113 @@ export async function PATCH(
           notes3: body.notes3?.trim() || null,
         },
       });
+  }
+
+  if (
+    body.templateUrlDraft !== undefined ||
+    body.templateUrlLive !== undefined ||
+    body.touchpointName !== undefined ||
+    body.collectRsvp !== undefined ||
+    hasTouchpointDetailChanges
+  ) {
+    const existingTouchpoint = await db
+      .select({ id: invitationTouchpoints.id })
+      .from(invitationTouchpoints)
+      .where(
+        and(
+          eq(invitationTouchpoints.invitationId, invitationId),
+          eq(invitationTouchpoints.kind, touchpointKind)
+        )
+      )
+      .limit(1);
+
+    const touchpointId = existingTouchpoint[0]?.id ?? crypto.randomUUID();
+
+    if (existingTouchpoint.length === 0) {
+      await db.insert(invitationTouchpoints).values({
+        id: touchpointId,
+        invitationId,
+        kind: touchpointKind,
+        name:
+          body.touchpointName?.trim() ||
+          (touchpointKind === "save_the_date" ? "Save the Date" : "Invitation"),
+        title: body.title?.trim() || null,
+        collectRsvp:
+          body.collectRsvp ?? (touchpointKind === "save_the_date" ? false : true),
+        templateUrlDraft: body.templateUrlDraft?.trim() || null,
+        templateUrlLive: body.templateUrlLive?.trim() || null,
+      });
+    } else {
+      const touchpointUpdate: {
+        name?: string;
+        title?: string | null;
+        collectRsvp?: boolean;
+        templateUrlDraft?: string | null;
+        templateUrlLive?: string | null;
+      } = {};
+      if (body.touchpointName !== undefined) {
+        touchpointUpdate.name = body.touchpointName.trim() || "Invitation";
+      }
+      if (body.collectRsvp !== undefined) {
+        touchpointUpdate.collectRsvp = body.collectRsvp;
+      }
+      if (body.title !== undefined) {
+        touchpointUpdate.title = body.title.trim() || null;
+      }
+      if (body.templateUrlDraft !== undefined) {
+        touchpointUpdate.templateUrlDraft = body.templateUrlDraft?.trim() || null;
+      }
+      if (body.templateUrlLive !== undefined) {
+        touchpointUpdate.templateUrlLive = body.templateUrlLive?.trim() || null;
+      }
+      if (Object.keys(touchpointUpdate).length > 0) {
+        await db
+          .update(invitationTouchpoints)
+          .set(touchpointUpdate)
+          .where(eq(invitationTouchpoints.id, touchpointId));
+      }
+    }
+
+    if (hasTouchpointDetailChanges) {
+      await db
+        .insert(invitationTouchpointDetails)
+        .values({
+          touchpointId,
+          date: body.date?.trim() || null,
+          time: body.time?.trim() || null,
+          eventDate: body.eventDate?.trim() || null,
+          eventTime: body.eventTime?.trim() || null,
+          dateFormat: body.dateFormat?.trim() || null,
+          timeFormat: body.timeFormat?.trim() || null,
+          locationName: body.locationName?.trim() || null,
+          address: body.address?.trim() || null,
+          mapLink: body.mapLink?.trim() || null,
+          registryLink: body.registryLink?.trim() || null,
+          mapEmbed: body.mapEmbed?.trim() || null,
+          notes: body.notes?.trim() || null,
+          notes2: body.notes2?.trim() || null,
+          notes3: body.notes3?.trim() || null,
+        })
+        .onConflictDoUpdate({
+          target: invitationTouchpointDetails.touchpointId,
+          set: {
+            date: body.date?.trim() || null,
+            time: body.time?.trim() || null,
+            eventDate: body.eventDate?.trim() || null,
+            eventTime: body.eventTime?.trim() || null,
+            dateFormat: body.dateFormat?.trim() || null,
+            timeFormat: body.timeFormat?.trim() || null,
+            locationName: body.locationName?.trim() || null,
+            address: body.address?.trim() || null,
+            mapLink: body.mapLink?.trim() || null,
+            registryLink: body.registryLink?.trim() || null,
+            mapEmbed: body.mapEmbed?.trim() || null,
+            notes: body.notes?.trim() || null,
+            notes2: body.notes2?.trim() || null,
+            notes3: body.notes3?.trim() || null,
+          },
+        });
+    }
   }
 
   if (body.rsvpOptions) {
@@ -259,11 +380,69 @@ export async function GET(
       .innerJoin(users, eq(users.id, invitationHosts.userId))
       .where(eq(invitationHosts.invitationId, invitationId));
 
+    const touchpoints = await db
+      .select({
+        id: invitationTouchpoints.id,
+        kind: invitationTouchpoints.kind,
+        name: invitationTouchpoints.name,
+        title: invitationTouchpoints.title,
+        collectRsvp: invitationTouchpoints.collectRsvp,
+        templateUrlDraft: invitationTouchpoints.templateUrlDraft,
+        templateUrlLive: invitationTouchpoints.templateUrlLive,
+        isActive: invitationTouchpoints.isActive,
+        date: invitationTouchpointDetails.date,
+        time: invitationTouchpointDetails.time,
+        eventDate: invitationTouchpointDetails.eventDate,
+        eventTime: invitationTouchpointDetails.eventTime,
+        dateFormat: invitationTouchpointDetails.dateFormat,
+        timeFormat: invitationTouchpointDetails.timeFormat,
+        locationName: invitationTouchpointDetails.locationName,
+        address: invitationTouchpointDetails.address,
+        mapLink: invitationTouchpointDetails.mapLink,
+        registryLink: invitationTouchpointDetails.registryLink,
+        mapEmbed: invitationTouchpointDetails.mapEmbed,
+        notes: invitationTouchpointDetails.notes,
+        notes2: invitationTouchpointDetails.notes2,
+        notes3: invitationTouchpointDetails.notes3,
+      })
+      .from(invitationTouchpoints)
+      .leftJoin(
+        invitationTouchpointDetails,
+        eq(invitationTouchpointDetails.touchpointId, invitationTouchpoints.id)
+      )
+      .where(eq(invitationTouchpoints.invitationId, invitationId));
+
     return NextResponse.json({
       invitation: invitation[0],
       details: details[0] ?? null,
       rsvpOptions: options,
       hosts,
+      touchpoints: touchpoints.map((tp) => ({
+        id: tp.id,
+        kind: tp.kind,
+        name: tp.name,
+        title: tp.title,
+        collectRsvp: tp.collectRsvp,
+        templateUrlDraft: tp.templateUrlDraft,
+        templateUrlLive: tp.templateUrlLive,
+        isActive: tp.isActive,
+        details: {
+          date: tp.date,
+          time: tp.time,
+          eventDate: tp.eventDate,
+          eventTime: tp.eventTime,
+          dateFormat: tp.dateFormat,
+          timeFormat: tp.timeFormat,
+          locationName: tp.locationName,
+          address: tp.address,
+          mapLink: tp.mapLink,
+          registryLink: tp.registryLink,
+          mapEmbed: tp.mapEmbed,
+          notes: tp.notes,
+          notes2: tp.notes2,
+          notes3: tp.notes3,
+        },
+      })),
     });
   } catch (error) {
     console.error("Invitation GET failed", error);

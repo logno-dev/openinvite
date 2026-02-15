@@ -4,7 +4,6 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   guestGroups,
-  invitationDetails,
   invitationHosts,
   invitations,
   rsvpOptions,
@@ -16,6 +15,7 @@ import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
 import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
 import { renderRsvpForm } from "@/lib/rsvp";
 import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
+import { getResolvedTouchpoint } from "@/lib/touchpoints";
 
 export const runtime = "nodejs";
 
@@ -66,7 +66,6 @@ export async function GET(
     .select({
       id: invitations.id,
       title: invitations.title,
-      templateUrlLive: invitations.templateUrlLive,
       countMode: invitations.countMode,
     })
     .from(invitations)
@@ -78,16 +77,11 @@ export async function GET(
   }
 
   const record = invitation[0];
-  const templateUrlLive = record.templateUrlLive;
-  if (!templateUrlLive) {
+  const touchpoint = await getResolvedTouchpoint(record.id, "invitation");
+  const templateUrlLive = touchpoint?.templateUrlLive ?? null;
+  if (!touchpoint || !templateUrlLive) {
     return NextResponse.json({ error: "Template URL missing" }, { status: 400 });
   }
-
-  const details = await db
-    .select()
-    .from(invitationDetails)
-    .where(eq(invitationDetails.invitationId, record.id))
-    .limit(1);
 
   const options = await db
     .select({ key: rsvpOptions.key, label: rsvpOptions.label })
@@ -117,11 +111,11 @@ export async function GET(
   try {
     const html = await fetchTemplate(templateUrlLive);
     const sanitized = sanitizeTemplate(html);
-    const dateValue = details[0]?.eventDate ?? details[0]?.date ?? null;
-    const timeValue = details[0]?.eventTime ?? details[0]?.time ?? null;
+    const dateValue = touchpoint.details.eventDate ?? touchpoint.details.date ?? null;
+    const timeValue = touchpoint.details.eventTime ?? touchpoint.details.time ?? null;
     const formattedDate = formatDate(
       dateValue,
-      (details[0]?.dateFormat ?? "MMM d, yyyy") as
+      (touchpoint.details.dateFormat ?? "MMM d, yyyy") as
         | "MMM d, yyyy"
         | "MMMM d, yyyy"
         | "EEE, MMM d"
@@ -129,21 +123,41 @@ export async function GET(
     );
     const formattedTime = formatTime(
       timeValue,
-      (details[0]?.timeFormat ?? "h:mm a") as "h:mm a" | "h a" | "HH:mm"
+      (touchpoint.details.timeFormat ?? "h:mm a") as "h:mm a" | "h a" | "HH:mm"
     );
 
+    const responseHtml = touchpoint.collectRsvp
+      ? renderRsvpForm({
+          actionUrl: "/api/rsvp",
+          guestName: group[0].displayName,
+          expectedAdults: group[0].expectedAdults,
+          expectedKids: group[0].expectedKids,
+          expectedTotal: group[0].expectedTotal,
+          responseOptionKey: latestResponse[0]?.optionKey ?? null,
+          responseAdults: latestResponse[0]?.adults ?? null,
+          responseKids: latestResponse[0]?.kids ?? null,
+          responseTotal: latestResponse[0]?.total ?? null,
+          responseMessage: latestResponse[0]?.message ?? null,
+          options,
+          tokenFieldName: "guestToken",
+          tokenValue: token,
+          countMode: record.countMode === "total" ? "total" : "split",
+          allowOpenCount: group[0].openCount,
+        })
+      : null;
+
     injected = injectTemplateData(sanitized, {
-      title: record.title,
+      title: touchpoint.title,
       date: formattedDate,
       time: formattedTime,
-      locationName: details[0]?.locationName ?? null,
-      address: details[0]?.address ?? null,
-      mapLink: details[0]?.mapLink ?? null,
-      registryLink: details[0]?.registryLink ?? null,
-      mapEmbed: details[0]?.mapEmbed ?? null,
-      notes: details[0]?.notes ?? null,
-      notes2: details[0]?.notes2 ?? null,
-      notes3: details[0]?.notes3 ?? null,
+      locationName: touchpoint.details.locationName,
+      address: touchpoint.details.address,
+      mapLink: touchpoint.details.mapLink,
+      registryLink: touchpoint.details.registryLink,
+      mapEmbed: touchpoint.details.mapEmbed,
+      notes: touchpoint.details.notes,
+      notes2: touchpoint.details.notes2,
+      notes3: touchpoint.details.notes3,
       hostNames: hostNames
         .map((host) => host.name)
         .filter(Boolean)
@@ -154,23 +168,7 @@ export async function GET(
       expectedAdults: group[0].expectedAdults,
       expectedKids: group[0].expectedKids,
       expectedTotal: group[0].expectedTotal,
-      responseHtml: renderRsvpForm({
-        actionUrl: "/api/rsvp",
-        guestName: group[0].displayName,
-        expectedAdults: group[0].expectedAdults,
-        expectedKids: group[0].expectedKids,
-        expectedTotal: group[0].expectedTotal,
-        responseOptionKey: latestResponse[0]?.optionKey ?? null,
-        responseAdults: latestResponse[0]?.adults ?? null,
-        responseKids: latestResponse[0]?.kids ?? null,
-        responseTotal: latestResponse[0]?.total ?? null,
-        responseMessage: latestResponse[0]?.message ?? null,
-        options,
-        tokenFieldName: "guestToken",
-        tokenValue: token,
-        countMode: record.countMode === "total" ? "total" : "split",
-        allowOpenCount: group[0].openCount,
-      }),
+      responseHtml,
       calendarLink: `/api/calendar/${token}`,
     });
   } catch {

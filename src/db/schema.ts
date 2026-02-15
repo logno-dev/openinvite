@@ -97,6 +97,51 @@ export const invitationDetails = sqliteTable("invitation_details", {
   notes3: text("notes_3"),
 });
 
+export const invitationTouchpoints = sqliteTable("invitation_touchpoints", {
+  id: text("id").primaryKey(),
+  invitationId: text("invitation_id")
+    .notNull()
+    .references(() => invitations.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  name: text("name").notNull(),
+  title: text("title"),
+  collectRsvp: integer("collect_rsvp", { mode: "boolean" })
+    .notNull()
+    .default(sql`(1)`),
+  templateUrlDraft: text("template_url_draft"),
+  templateUrlLive: text("template_url_live"),
+  isActive: integer("is_active", { mode: "boolean" })
+    .notNull()
+    .default(sql`(1)`),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
+});
+
+export const invitationTouchpointDetails = sqliteTable(
+  "invitation_touchpoint_details",
+  {
+    touchpointId: text("touchpoint_id")
+      .notNull()
+      .references(() => invitationTouchpoints.id, { onDelete: "cascade" })
+      .primaryKey(),
+    date: text("date"),
+    time: text("time"),
+    eventDate: text("event_date"),
+    eventTime: text("event_time"),
+    dateFormat: text("date_format"),
+    timeFormat: text("time_format"),
+    locationName: text("location_name"),
+    address: text("address"),
+    mapLink: text("map_link"),
+    registryLink: text("registry_link"),
+    mapEmbed: text("map_embed"),
+    notes: text("notes"),
+    notes2: text("notes_2"),
+    notes3: text("notes_3"),
+  }
+);
+
 export const invitationHosts = sqliteTable("invitation_hosts", {
   id: text("id").primaryKey(),
   invitationId: text("invitation_id")
