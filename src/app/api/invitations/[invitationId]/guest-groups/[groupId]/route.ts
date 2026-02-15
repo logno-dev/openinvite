@@ -10,6 +10,7 @@ type UpdateGuestGroupPayload = {
   displayName?: string;
   email?: string | null;
   phone?: string | null;
+  notes?: string | null;
   expectedAdults?: number;
   expectedKids?: number;
   expectedTotal?: number;
@@ -52,6 +53,9 @@ export async function PATCH(
   }
   if (body.phone !== undefined) {
     update.phone = body.phone?.trim() || null;
+  }
+  if (body.notes !== undefined) {
+    update.notes = body.notes?.trim() || null;
   }
   if (body.expectedAdults !== undefined) {
     update.expectedAdults = Math.max(0, body.expectedAdults);

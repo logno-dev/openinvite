@@ -3,6 +3,8 @@
 OpenInvite loads your HTML template, sanitizes it, then injects invitation data
 by element id. If a value is missing, the element is removed entirely.
 
+Templates must be hosted and publicly available via an HTTPS web server.
+
 ## Core placeholder IDs
 
 Use these ids in your HTML so OpenInvite can inject values:
@@ -12,8 +14,8 @@ Use these ids in your HTML so OpenInvite can inject values:
 - `notes`, `notes_2`, `notes_3`
 - `host_names`
 - `rsvp_yes_label`, `rsvp_no_label`, `rsvp_maybe_label`
-- `guest_name`, `expected_adults`, `expected_kids`, `expected_total`
-- `map_link`, `response`, `calendar_link`
+- `guest_name`, `guest_message`, `expected_adults`, `expected_kids`, `expected_total`
+- `map_link`, `registry_link`, `response`, `calendar_link`
 
 ## Example snippet
 
@@ -34,6 +36,20 @@ Use these ids in your HTML so OpenInvite can inject values:
 If you provide a map embed HTML snippet, it is injected into `map_link`. If you
 only provide a URL, it is inserted as text or as the `href` on an anchor. If
 neither is provided, the element is removed.
+
+## Textarea formatting and markdown
+
+Textarea-backed fields support line breaks and limited markdown. This applies to
+`address`, `notes`, `notes_2`, `notes_3`, and `guest_message`.
+
+Supported markdown:
+
+- `**bold**`
+- `*italic*`
+- `- list item`
+- `[link text](https://example.com)`
+
+Links support `https`, `http`, `mailto`, and relative `/path` URLs.
 
 ## Allowed HTML
 

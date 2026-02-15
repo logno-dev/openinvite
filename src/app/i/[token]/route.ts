@@ -52,6 +52,7 @@ export async function GET(
       expectedKids: guestGroups.expectedKids,
       expectedTotal: guestGroups.expectedTotal,
       openCount: guestGroups.openCount,
+      notes: guestGroups.notes,
     })
     .from(guestGroups)
     .where(eq(guestGroups.token, token))
@@ -149,6 +150,7 @@ export async function GET(
         .join(" + "),
       rsvpOptions: options,
       guestDisplayName: group[0].displayName,
+      guestMessage: group[0].notes,
       expectedAdults: group[0].expectedAdults,
       expectedKids: group[0].expectedKids,
       expectedTotal: group[0].expectedTotal,

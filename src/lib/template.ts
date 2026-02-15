@@ -15,6 +15,7 @@ export type InvitationTemplateData = {
   hostNames: string;
   rsvpOptions: Array<{ key: string; label: string }>;
   guestDisplayName?: string | null;
+  guestMessage?: string | null;
   expectedAdults?: number | null;
   expectedKids?: number | null;
   expectedTotal?: number | null;
@@ -88,6 +89,7 @@ const placeholderIds = {
   rsvpNo: "rsvp_no_label",
   rsvpMaybe: "rsvp_maybe_label",
   guestName: "guest_name",
+  guestMessage: "guest_message",
   expectedAdults: "expected_adults",
   expectedKids: "expected_kids",
   expectedTotal: "expected_total",
@@ -299,6 +301,9 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
   } else {
     output = removeElementById(output, placeholderIds.guestName);
   }
+  output = data.guestMessage
+    ? setMultilineContent(output, placeholderIds.guestMessage, data.guestMessage)
+    : removeElementById(output, placeholderIds.guestMessage);
   output = data.expectedAdults != null
     ? setContent(output, placeholderIds.expectedAdults, String(data.expectedAdults))
     : removeElementById(output, placeholderIds.expectedAdults);

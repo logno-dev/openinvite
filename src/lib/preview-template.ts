@@ -135,6 +135,10 @@ export function applyPreviewDataToHtml(
     rsvp_no_label: data.rsvpOptions.find((opt) => opt.key === "no")?.label ?? null,
     rsvp_maybe_label: data.rsvpOptions.find((opt) => opt.key === "maybe")?.label ?? null,
     guest_name: mode === "guest" ? "Preview Guest" : null,
+    guest_message:
+      mode === "guest"
+        ? "**Guest note:** We reserved a +1 for you.\n- Please bring your guest's name at check-in."
+        : null,
     expected_adults: mode === "guest" ? "2" : null,
     expected_kids: mode === "guest" ? "0" : null,
     expected_total: mode === "guest" ? "2" : null,

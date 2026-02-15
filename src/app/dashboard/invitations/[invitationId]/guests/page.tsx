@@ -10,6 +10,7 @@ type GuestGroup = {
   displayName: string;
   email: string | null;
   phone: string | null;
+  notes: string | null;
   expectedAdults: number;
   expectedKids: number;
   expectedTotal: number;
@@ -55,6 +56,7 @@ export default function GuestListPage() {
     displayName: "",
     email: "",
     phone: "",
+    notes: "",
     expectedAdults: "0",
     expectedKids: "0",
     expectedTotal: "0",
@@ -71,6 +73,7 @@ export default function GuestListPage() {
     displayName: "",
     email: "",
     phone: "",
+    notes: "",
     expectedAdults: "0",
     expectedKids: "0",
     expectedTotal: "0",
@@ -162,6 +165,7 @@ export default function GuestListPage() {
         displayName: guestForm.displayName,
         email: guestForm.email,
         phone: guestForm.phone,
+        notes: guestForm.notes,
         expectedAdults: adults,
         expectedKids: kids,
         expectedTotal: total,
@@ -188,6 +192,7 @@ export default function GuestListPage() {
         displayName: guestForm.displayName,
         email: guestForm.email || null,
         phone: guestForm.phone || null,
+        notes: guestForm.notes || null,
         expectedAdults: adults,
         expectedKids: kids,
         expectedTotal: total,
@@ -200,6 +205,7 @@ export default function GuestListPage() {
       displayName: "",
       email: "",
       phone: "",
+      notes: "",
       expectedAdults: "0",
       expectedKids: "0",
       expectedTotal: "0",
@@ -215,6 +221,7 @@ export default function GuestListPage() {
       displayName: group.displayName,
       email: group.email ?? "",
       phone: group.phone ?? "",
+      notes: group.notes ?? "",
       expectedAdults: String(group.expectedAdults),
       expectedKids: String(group.expectedKids),
       expectedTotal: String(group.expectedTotal),
@@ -239,6 +246,7 @@ export default function GuestListPage() {
           displayName: editForm.displayName,
           email: editForm.email,
           phone: editForm.phone,
+          notes: editForm.notes,
           expectedAdults: countMode === "split" ? Number(editForm.expectedAdults) : 0,
           expectedKids: countMode === "split" ? Number(editForm.expectedKids) : 0,
           expectedTotal:
@@ -263,6 +271,7 @@ export default function GuestListPage() {
               displayName: editForm.displayName,
               email: editForm.email || null,
               phone: editForm.phone || null,
+              notes: editForm.notes || null,
               expectedAdults:
                 countMode === "split" ? Number(editForm.expectedAdults) : 0,
               expectedKids:
@@ -757,6 +766,19 @@ export default function GuestListPage() {
                 placeholder="(555) 555-5555"
               />
             </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                Guest message <span className="normal-case">(id: guest_message)</span>
+              </label>
+              <textarea
+                className="min-h-[88px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                value={guestForm.notes}
+                onChange={(event) =>
+                  setGuestForm((prev) => ({ ...prev, notes: event.target.value }))
+                }
+                placeholder="Optional note shown only on this guest's invitation"
+              />
+            </div>
             <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
               <span className="text-sm text-[var(--muted)]">Allow open count</span>
               <button
@@ -976,6 +998,11 @@ export default function GuestListPage() {
                     <span>Message: {group.response.message}</span>
                   </div>
                 ) : null}
+                {group.notes ? (
+                  <div className="mt-2 text-xs text-[var(--muted)]">
+                    <span>Guest note: {group.notes}</span>
+                  </div>
+                ) : null}
 
                 {editingId === group.id ? (
                   <div className="mt-4 grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -1013,6 +1040,18 @@ export default function GuestListPage() {
                           value={editForm.phone}
                           onChange={(event) =>
                             setEditForm((prev) => ({ ...prev, phone: event.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2 md:col-span-2">
+                        <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                          Guest message <span className="normal-case">(id: guest_message)</span>
+                        </label>
+                        <textarea
+                          className="min-h-[88px] rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+                          value={editForm.notes}
+                          onChange={(event) =>
+                            setEditForm((prev) => ({ ...prev, notes: event.target.value }))
                           }
                         />
                       </div>

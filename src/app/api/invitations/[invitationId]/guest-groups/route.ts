@@ -57,6 +57,7 @@ export async function GET(
       displayName: guestGroups.displayName,
       email: guestGroups.email,
       phone: guestGroups.phone,
+      notes: guestGroups.notes,
       expectedAdults: guestGroups.expectedAdults,
       expectedKids: guestGroups.expectedKids,
       expectedTotal: guestGroups.expectedTotal,
