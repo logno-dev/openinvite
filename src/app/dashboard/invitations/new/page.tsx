@@ -377,8 +377,8 @@ export default function NewInvitationPage() {
                 <option value="total">Total guests only</option>
               </select>
             </div>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
-              <span className="text-sm text-[var(--foreground)]">
+            <div className="flex items-start justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+              <span className="min-w-0 flex-1 text-sm leading-5 text-[var(--foreground)]">
                 Allow registered respondents to view guest list and group chat
               </span>
               <button
@@ -386,7 +386,7 @@ export default function NewInvitationPage() {
                 role="switch"
                 aria-checked={form.shareGuestList}
                 onClick={() => updateField("shareGuestList", !form.shareGuestList)}
-                className="oi-toggle"
+                className="oi-toggle shrink-0"
               >
                 <span className="oi-toggle-thumb" />
               </button>

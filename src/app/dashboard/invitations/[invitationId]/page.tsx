@@ -266,7 +266,7 @@ export default function EditInvitationPage() {
     return (
       <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
         <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
-        <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
+        <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-16 sm:px-6">
           <p className="text-sm text-[var(--muted)]">Loading invitation...</p>
         </main>
       </div>
@@ -276,7 +276,7 @@ export default function EditInvitationPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
       <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-16 sm:px-6">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
             Edit invitation
@@ -290,9 +290,9 @@ export default function EditInvitationPage() {
         </div>
         <form
           onSubmit={handleSubmit}
-          className="grid gap-6 rounded-3xl border border-white/15 bg-white/5 p-6"
+          className="grid gap-6 overflow-x-hidden rounded-3xl border border-white/15 bg-white/5 p-4 sm:p-6 [&_div]:max-w-full [&_div]:min-w-0 [&_section]:max-w-full [&_section]:min-w-0 [&_input]:max-w-full [&_input]:min-w-0 [&_input]:w-full [&_select]:max-w-full [&_select]:min-w-0 [&_select]:w-full [&_textarea]:max-w-full [&_textarea]:min-w-0 [&_textarea]:w-full"
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Title <span className="normal-case">(id: title)</span>
@@ -393,7 +393,7 @@ export default function EditInvitationPage() {
                 Address <span className="normal-case">(id: address)</span>
               </label>
               <textarea
-                className="min-h-[88px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                className="min-h-[88px] w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
                 value={form.address}
                 onChange={(event) => updateField("address", event.target.value)}
                 placeholder="44 Harbor Ave, Seattle"
@@ -467,7 +467,7 @@ export default function EditInvitationPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 RSVP yes label <span className="normal-case">(id: rsvp_yes_label)</span>
@@ -500,7 +500,7 @@ export default function EditInvitationPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Timezone
@@ -526,8 +526,8 @@ export default function EditInvitationPage() {
                 <option value="total">Total guests only</option>
               </select>
             </div>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
-              <span className="text-sm text-[var(--foreground)]">
+            <div className="flex items-start justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+              <span className="min-w-0 flex-1 text-sm leading-5 text-[var(--foreground)]">
                 Allow registered respondents to view guest list and group chat
               </span>
               <button
@@ -535,7 +535,7 @@ export default function EditInvitationPage() {
                 role="switch"
                 aria-checked={form.shareGuestList}
                 onClick={() => updateField("shareGuestList", !form.shareGuestList)}
-                className="oi-toggle"
+                className="oi-toggle shrink-0"
               >
                 <span className="oi-toggle-thumb" />
               </button>
@@ -584,7 +584,7 @@ export default function EditInvitationPage() {
               Create host invite link
             </button>
             {form.openRsvpToken ? (
-              <span className="text-xs text-[var(--muted)]">
+              <span className="break-all text-xs text-[var(--muted)]">
                 Open RSVP: /i/open/{form.openRsvpToken}
               </span>
             ) : null}
@@ -599,11 +599,11 @@ export default function EditInvitationPage() {
                 key={host.id}
                 className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3"
               >
-                <div className="text-sm">
-                  <p className="text-[var(--foreground)]">
+                <div className="min-w-0 text-sm">
+                  <p className="truncate text-[var(--foreground)]">
                     {host.displayName || host.email}
                   </p>
-                  <p className="text-xs text-[var(--muted)]">{host.email}</p>
+                  <p className="truncate text-xs text-[var(--muted)]">{host.email}</p>
                 </div>
                 <button
                   type="button"
