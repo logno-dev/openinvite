@@ -98,7 +98,7 @@ export function renderRsvpForm(input: RsvpRenderInput) {
       `;
 
   return `
-    <form class="oi-rsvp-form" action="${escapeHtml(input.actionUrl)}" method="post">
+    <form class="oi-rsvp-form" action="${escapeHtml(input.actionUrl)}" method="post" onsubmit="if(this.dataset.submitting==='1'){return false;}this.dataset.submitting='1';var btn=this.querySelector('button[type=submit]');if(btn){btn.disabled=true;btn.textContent='Submitting...';}return true;">
       <input class="oi-hidden" type="hidden" name="${input.tokenFieldName}" value="${escapeHtml(input.tokenValue)}" />
       ${guestName ? `<div class="oi-guest-name">Guest: ${guestName}</div>` : ""}
       ${guestNameField}

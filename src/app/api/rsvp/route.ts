@@ -121,6 +121,51 @@ export async function POST(request: Request) {
     invitationId = invitation[0].id;
     guestDisplayName = form.get("guestName")?.toString().trim() || "Guest";
 
+    const existingTokenFromCookie = cookieStore.get(`oi_open_${openToken}`)?.value ?? null;
+    if (existingTokenFromCookie) {
+      const existingGroupFromCookie = await db
+        .select({
+          id: guestGroups.id,
+          token: guestGroups.token,
+        })
+        .from(guestGroups)
+        .where(
+          and(
+            eq(guestGroups.invitationId, invitationId),
+            eq(guestGroups.token, existingTokenFromCookie)
+          )
+        )
+        .limit(1);
+
+      if (existingGroupFromCookie.length > 0) {
+        groupId = existingGroupFromCookie[0].id;
+        guestGroupToken = existingGroupFromCookie[0].token;
+
+        const updateValues: {
+          displayName: string;
+          expectedAdults: number;
+          expectedKids: number;
+          expectedTotal: number;
+          openCount: true;
+          email?: string;
+        } = {
+          displayName: guestDisplayName,
+          expectedAdults: adults,
+          expectedKids: kids,
+          expectedTotal: total,
+          openCount: true,
+        };
+        if (sessionUser?.email) {
+          updateValues.email = sessionUser.email;
+        }
+
+        await db
+          .update(guestGroups)
+          .set(updateValues)
+          .where(eq(guestGroups.id, existingGroupFromCookie[0].id));
+      }
+    }
+
     if (sessionUser) {
       const existingLinkedGroup = await db
         .select({
