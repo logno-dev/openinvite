@@ -85,6 +85,7 @@ export default function GuestListPage() {
   const [bulkSendIncludeSent, setBulkSendIncludeSent] = useState(false);
   const [hostChatInput, setHostChatInput] = useState("");
   const [hostChatSending, setHostChatSending] = useState(false);
+  const [actionMenuOpenId, setActionMenuOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -105,6 +106,30 @@ export default function GuestListPage() {
 
     load();
   }, [invitationId]);
+
+  useEffect(() => {
+    function handleOutside(event: MouseEvent | TouchEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest("[data-guest-actions-root='true']")) return;
+      setActionMenuOpenId(null);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setActionMenuOpenId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   async function handleGuestSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -458,7 +483,7 @@ export default function GuestListPage() {
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-3">
           {(() => {
             const defaultOptions = [
               { key: "yes", label: "Yes" },
@@ -495,27 +520,70 @@ export default function GuestListPage() {
               entry.total += group.response.total;
             });
 
-            return Array.from(summary.entries()).map(([key, entry]) => (
-              <div
-                key={key}
-                className="rounded-2xl border border-white/15 bg-white/5 p-4"
-              >
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-                  {entry.label}
-                </p>
-                {countMode === "split" ? (
-                  <div className="mt-2 grid gap-1 text-sm">
-                    <span>Adults: {entry.adults}</span>
-                    <span>Kids: {entry.kids}</span>
-                    <span>Total: {entry.total}</span>
+            const rows = Array.from(summary.entries()).map(([key, entry]) => ({
+              key,
+              ...entry,
+              isYes: key.toLowerCase() === "yes",
+            }));
+
+            return (
+              <>
+                <div className="hidden overflow-hidden rounded-2xl border border-white/15 bg-white/5 md:block">
+                  <div className="grid grid-cols-4 border-b border-white/10 bg-black/10 px-4 py-3 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    <span>Response</span>
+                    <span>{countMode === "split" ? "Adults" : "Count"}</span>
+                    <span>{countMode === "split" ? "Kids" : ""}</span>
+                    <span>Total</span>
                   </div>
-                ) : (
-                  <div className="mt-2 text-sm">
-                    <span>Total: {entry.total}</span>
-                  </div>
-                )}
-              </div>
-            ));
+                  {rows.map((row) => (
+                    <div
+                      key={row.key}
+                      className="grid grid-cols-4 items-center border-b border-white/10 px-4 py-3 last:border-b-0"
+                    >
+                      <span className="text-sm text-[var(--foreground)]">{row.label}</span>
+                      <span className={`font-semibold ${row.isYes ? "text-2xl text-[var(--accent)]" : "text-lg"}`}>
+                        {countMode === "split" ? row.adults : row.total}
+                      </span>
+                      <span className={`font-semibold ${row.isYes ? "text-2xl text-[var(--accent)]" : "text-lg"}`}>
+                        {countMode === "split" ? row.kids : "-"}
+                      </span>
+                      <span className={`font-semibold ${row.isYes ? "text-3xl text-[var(--accent)]" : "text-xl"}`}>
+                        {row.total}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 md:hidden">
+                  {rows.map((row) => (
+                    <div key={row.key} className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">{row.label}</p>
+                      {countMode === "split" ? (
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Adults</p>
+                            <p className={`font-semibold ${row.isYes ? "text-2xl text-[var(--accent)]" : "text-lg"}`}>{row.adults}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Kids</p>
+                            <p className={`font-semibold ${row.isYes ? "text-2xl text-[var(--accent)]" : "text-lg"}`}>{row.kids}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Total</p>
+                            <p className={`font-semibold ${row.isYes ? "text-3xl text-[var(--accent)]" : "text-xl"}`}>{row.total}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-2">
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Total</p>
+                          <p className={`font-semibold ${row.isYes ? "text-3xl text-[var(--accent)]" : "text-xl"}`}>{row.total}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
           })()}
         </section>
 
@@ -727,81 +795,38 @@ export default function GuestListPage() {
                 key={group.id}
                 className="rounded-2xl border border-white/15 bg-white/5 p-4"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-lg font-semibold text-[var(--foreground)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold text-[var(--foreground)]">
                       {group.displayName}
                     </p>
-                    <p className="text-xs text-[var(--muted)]">
+                    <p className="truncate text-xs text-[var(--muted)]">
                       {group.email ?? "No email"}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <a
-                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
-                      href={`/i/${group.token}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open guest link
-                    </a>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs text-[var(--foreground)] transition"
-                        type="button"
-                        onClick={async () => {
-                          const ok = await copyToClipboard(
-                            `${window.location.origin}/i/${group.token}`
-                          );
-                          setGuestCopyState((prev) => ({
-                            ...prev,
-                            [group.id]: ok ? "copied" : "error",
-                          }));
-                          setTimeout(
-                            () =>
-                              setGuestCopyState((prev) => ({
-                                ...prev,
-                                [group.id]: "idle",
-                              })),
-                            1500
-                          );
-                        }}
-                      >
-                        Copy link
-                      </button>
-                      <span
-                        className={`w-14 text-[10px] uppercase tracking-[0.2em] transition ${
-                          (guestCopyState[group.id] ?? "idle") === "copied"
-                            ? "text-emerald-300 opacity-100"
-                            : (guestCopyState[group.id] ?? "idle") === "error"
-                              ? "text-rose-300 opacity-100"
-                              : "opacity-0"
-                        }`}
-                      >
-                        {(guestCopyState[group.id] ?? "idle") === "error"
-                          ? "Failed"
-                          : "Copied"}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2 self-start">
                     <button
-                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs text-[var(--foreground)] transition"
                       type="button"
-                      disabled={!group.email || emailSendState[group.id] === "sending"}
-                      onClick={() => sendGuestEmail(group, "invite")}
+                      onClick={async () => {
+                        const ok = await copyToClipboard(
+                          `${window.location.origin}/i/${group.token}`
+                        );
+                        setGuestCopyState((prev) => ({
+                          ...prev,
+                          [group.id]: ok ? "copied" : "error",
+                        }));
+                        setTimeout(
+                          () =>
+                            setGuestCopyState((prev) => ({
+                              ...prev,
+                              [group.id]: "idle",
+                            })),
+                          1500
+                        );
+                      }}
                     >
-                      {emailSendState[group.id] === "sending"
-                        ? "Sending..."
-                        : "Send invite"}
-                    </button>
-                    <button
-                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
-                      type="button"
-                      disabled={!group.email || emailSendState[group.id] === "sending"}
-                      onClick={() => sendGuestEmail(group, "update")}
-                    >
-                      {emailSendState[group.id] === "sending"
-                        ? "Sending..."
-                        : "Send update"}
+                      Copy link
                     </button>
                     <button
                       className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
@@ -810,25 +835,105 @@ export default function GuestListPage() {
                     >
                       Edit
                     </button>
-                    <button
-                      className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
-                      type="button"
-                      onClick={() => deleteGuest(group.id, group.displayName)}
-                    >
-                      Delete
-                    </button>
-                    <span
-                      className={`w-14 text-[10px] uppercase tracking-[0.2em] transition ${
-                        (emailSendState[group.id] ?? "idle") === "sent"
-                          ? "text-emerald-300 opacity-100"
-                          : (emailSendState[group.id] ?? "idle") === "error"
-                            ? "text-rose-300 opacity-100"
-                            : "opacity-0"
-                      }`}
-                    >
-                      {(emailSendState[group.id] ?? "idle") === "error" ? "Failed" : "Sent"}
-                    </span>
+                    <div className="relative" data-guest-actions-root="true">
+                      <button
+                        type="button"
+                        className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
+                        onClick={() =>
+                          setActionMenuOpenId((prev) => (prev === group.id ? null : group.id))
+                        }
+                      >
+                        Actions
+                      </button>
+                      {actionMenuOpenId === group.id ? (
+                        <div className="absolute right-0 z-20 mt-2 grid min-w-[170px] gap-1 rounded-xl border border-white/15 bg-[#111125] p-2 text-xs shadow-xl">
+                          <a
+                            className="rounded-lg px-3 py-2 text-left text-[var(--foreground)] hover:bg-white/10"
+                            href={`/i/${group.token}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => setActionMenuOpenId(null)}
+                          >
+                            Open link
+                          </a>
+                        <button
+                          className="rounded-lg px-3 py-2 text-left text-[var(--foreground)] hover:bg-white/10"
+                          type="button"
+                          onClick={() => {
+                            startEdit(group);
+                            setActionMenuOpenId(null);
+                          }}
+                        >
+                          Edit details
+                        </button>
+                        <button
+                          className="rounded-lg px-3 py-2 text-left text-[var(--foreground)] hover:bg-white/10 disabled:opacity-50"
+                          type="button"
+                          disabled={!group.email || emailSendState[group.id] === "sending"}
+                          onClick={() => {
+                            void sendGuestEmail(group, "invite");
+                            setActionMenuOpenId(null);
+                          }}
+                        >
+                          Send invite
+                        </button>
+                        <button
+                          className="rounded-lg px-3 py-2 text-left text-[var(--foreground)] hover:bg-white/10 disabled:opacity-50"
+                          type="button"
+                          disabled={!group.email || emailSendState[group.id] === "sending"}
+                          onClick={() => {
+                            void sendGuestEmail(group, "update");
+                            setActionMenuOpenId(null);
+                          }}
+                        >
+                          Send update
+                        </button>
+                        <button
+                          className="rounded-lg px-3 py-2 text-left text-rose-300 hover:bg-rose-500/20"
+                          type="button"
+                          onClick={() => {
+                            void deleteGuest(group.id, group.displayName);
+                            setActionMenuOpenId(null);
+                          }}
+                        >
+                          Delete guest
+                        </button>
+                      </div>
+                      ) : null}
+                    </div>
                   </div>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.2em]">
+                  <span
+                    className={`transition ${
+                      (guestCopyState[group.id] ?? "idle") === "copied"
+                        ? "text-emerald-300 opacity-100"
+                        : (guestCopyState[group.id] ?? "idle") === "error"
+                          ? "text-rose-300 opacity-100"
+                          : "text-[var(--muted)] opacity-70"
+                    }`}
+                  >
+                    {(guestCopyState[group.id] ?? "idle") === "copied"
+                      ? "Link copied"
+                      : (guestCopyState[group.id] ?? "idle") === "error"
+                        ? "Copy failed"
+                        : "Copy link available"}
+                  </span>
+                  <span
+                    className={`transition ${
+                      (emailSendState[group.id] ?? "idle") === "sent"
+                        ? "text-emerald-300 opacity-100"
+                        : (emailSendState[group.id] ?? "idle") === "error"
+                          ? "text-rose-300 opacity-100"
+                          : "text-[var(--muted)] opacity-70"
+                    }`}
+                  >
+                    {(emailSendState[group.id] ?? "idle") === "sent"
+                      ? "Email sent"
+                      : (emailSendState[group.id] ?? "idle") === "error"
+                        ? "Email failed"
+                        : "Email tools in actions"}
+                  </span>
                 </div>
                 <div className="mt-3 grid gap-2 text-xs text-[var(--muted)] md:grid-cols-3">
                   {countMode === "split" ? (
