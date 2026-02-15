@@ -903,38 +903,41 @@ export default function GuestListPage() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.2em]">
-                  <span
-                    className={`transition ${
-                      (guestCopyState[group.id] ?? "idle") === "copied"
-                        ? "text-emerald-300 opacity-100"
-                        : (guestCopyState[group.id] ?? "idle") === "error"
-                          ? "text-rose-300 opacity-100"
-                          : "text-[var(--muted)] opacity-70"
-                    }`}
-                  >
-                    {(guestCopyState[group.id] ?? "idle") === "copied"
-                      ? "Link copied"
-                      : (guestCopyState[group.id] ?? "idle") === "error"
-                        ? "Copy failed"
-                        : "Copy link available"}
-                  </span>
-                  <span
-                    className={`transition ${
-                      (emailSendState[group.id] ?? "idle") === "sent"
-                        ? "text-emerald-300 opacity-100"
-                        : (emailSendState[group.id] ?? "idle") === "error"
-                          ? "text-rose-300 opacity-100"
-                          : "text-[var(--muted)] opacity-70"
-                    }`}
-                  >
-                    {(emailSendState[group.id] ?? "idle") === "sent"
-                      ? "Email sent"
-                      : (emailSendState[group.id] ?? "idle") === "error"
-                        ? "Email failed"
-                        : "Email tools in actions"}
-                  </span>
-                </div>
+                {(guestCopyState[group.id] ?? "idle") !== "idle" ||
+                (emailSendState[group.id] ?? "idle") !== "idle" ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.2em]">
+                    {(guestCopyState[group.id] ?? "idle") !== "idle" ? (
+                      <span
+                        className={`transition ${
+                          (guestCopyState[group.id] ?? "idle") === "copied"
+                            ? "text-emerald-300"
+                            : "text-rose-300"
+                        }`}
+                      >
+                        {(guestCopyState[group.id] ?? "idle") === "copied"
+                          ? "Link copied"
+                          : "Copy failed"}
+                      </span>
+                    ) : null}
+                    {(emailSendState[group.id] ?? "idle") !== "idle" ? (
+                      <span
+                        className={`transition ${
+                          (emailSendState[group.id] ?? "idle") === "sent"
+                            ? "text-emerald-300"
+                            : (emailSendState[group.id] ?? "idle") === "error"
+                              ? "text-rose-300"
+                              : "text-[var(--muted)]"
+                        }`}
+                      >
+                        {(emailSendState[group.id] ?? "idle") === "sent"
+                          ? "Email sent"
+                          : (emailSendState[group.id] ?? "idle") === "error"
+                            ? "Email failed"
+                            : "Sending..."}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="mt-3 grid gap-2 text-xs text-[var(--muted)] md:grid-cols-3">
                   {countMode === "split" ? (
                     <>
