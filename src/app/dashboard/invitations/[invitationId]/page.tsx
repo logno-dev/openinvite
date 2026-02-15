@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import TopNav from "@/components/TopNav";
 import { dashboardNavLinks } from "@/lib/nav-links";
+import { commonTimezones } from "@/lib/timezones";
 
 type InvitationForm = {
   title: string;
@@ -91,6 +92,12 @@ export default function EditInvitationPage() {
     "idle" | "copied" | "error"
   >("idle");
   const [hostNotifications, setHostNotifications] = useState<HostNotification[]>([]);
+  const timezoneOptions: string[] = form
+    ? form.timezone &&
+      !commonTimezones.includes(form.timezone as (typeof commonTimezones)[number])
+      ? [form.timezone, ...commonTimezones]
+      : [...commonTimezones]
+    : [...commonTimezones];
 
   useEffect(() => {
     async function load() {
@@ -505,11 +512,17 @@ export default function EditInvitationPage() {
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Timezone
               </label>
-              <input
+              <select
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
                 value={form.timezone}
                 onChange={(event) => updateField("timezone", event.target.value)}
-              />
+              >
+                {timezoneOptions.map((timezone) => (
+                  <option key={timezone} value={timezone}>
+                    {timezone}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">

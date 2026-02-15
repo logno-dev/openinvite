@@ -3,6 +3,7 @@
 import { useState } from "react";
 import TopNav from "@/components/TopNav";
 import { dashboardNavLinks } from "@/lib/nav-links";
+import { commonTimezones } from "@/lib/timezones";
 
 type InvitationForm = {
   title: string;
@@ -60,6 +61,10 @@ export default function NewInvitationPage() {
   const [message, setMessage] = useState("");
   const [previewToken, setPreviewToken] = useState<string | null>(null);
   const [openRsvpToken, setOpenRsvpToken] = useState<string | null>(null);
+  const timezoneOptions: string[] =
+    form.timezone && !commonTimezones.includes(form.timezone as (typeof commonTimezones)[number])
+      ? [form.timezone, ...commonTimezones]
+      : [...commonTimezones];
 
   function updateField<K extends keyof InvitationForm>(key: K, value: InvitationForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -356,11 +361,17 @@ export default function NewInvitationPage() {
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Timezone
               </label>
-              <input
+              <select
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
                 value={form.timezone}
                 onChange={(event) => updateField("timezone", event.target.value)}
-              />
+              >
+                {timezoneOptions.map((timezone) => (
+                  <option key={timezone} value={timezone}>
+                    {timezone}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">

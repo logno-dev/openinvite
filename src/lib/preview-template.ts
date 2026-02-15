@@ -174,7 +174,9 @@ export function applyPreviewDataToHtml(
   const registryEl = doc.getElementById("registry_link");
   if (registryEl) {
     if (details?.registryLink) {
-      registryEl.innerHTML = `<a href="${escapeHtml(details.registryLink)}">Gift Registry</a>`;
+      registryEl.innerHTML = `<a href="${escapeHtml(
+        details.registryLink
+      )}" target="_blank" rel="noreferrer">Gift Registry</a>`;
     } else {
       registryEl.remove();
     }

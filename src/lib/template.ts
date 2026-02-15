@@ -366,7 +366,7 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
   if (data.registryLink) {
     const registryAnchor = `<a href="${escapeHtml(
       data.registryLink
-    )}">Gift Registry</a>`;
+    )}" target="_blank" rel="noreferrer">Gift Registry</a>`;
     output = setRawContent(output, placeholderIds.registryLink, registryAnchor);
   } else {
     output = removeElementById(output, placeholderIds.registryLink);
