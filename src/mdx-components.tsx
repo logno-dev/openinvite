@@ -34,17 +34,17 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       </p>
     ),
     ul: ({ children, ...props }: ComponentProps<"ul">) => (
-      <ul className="mt-3 grid gap-2 text-sm text-[var(--muted)]" {...props}>
+      <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-[var(--muted)]" {...props}>
         {children}
       </ul>
     ),
     ol: ({ children, ...props }: ComponentProps<"ol">) => (
-      <ol className="mt-3 grid gap-2 text-sm text-[var(--muted)]" {...props}>
+      <ol className="mt-3 list-decimal space-y-1 pl-6 text-sm text-[var(--muted)]" {...props}>
         {children}
       </ol>
     ),
     li: ({ children, ...props }: ComponentProps<"li">) => (
-      <li className="rounded-xl border border-white/10 bg-white/5 px-3 py-2" {...props}>
+      <li className="leading-relaxed" {...props}>
         {children}
       </li>
     ),
