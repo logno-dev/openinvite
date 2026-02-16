@@ -174,9 +174,13 @@ export function applyPreviewDataToHtml(
     } else if (details?.mapLink) {
       if (mapEl.tagName.toLowerCase() === "a") {
         (mapEl as HTMLAnchorElement).href = details.mapLink;
-        mapEl.textContent = details.mapLink;
+        (mapEl as HTMLAnchorElement).target = "_blank";
+        (mapEl as HTMLAnchorElement).rel = "noreferrer";
+        mapEl.textContent = "Map Link";
       } else {
-        mapEl.textContent = details.mapLink;
+        mapEl.innerHTML = `<a href="${escapeHtml(
+          details.mapLink
+        )}" target="_blank" rel="noreferrer">Map Link</a>`;
       }
     } else {
       mapEl.remove();

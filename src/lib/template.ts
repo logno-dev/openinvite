@@ -228,12 +228,6 @@ function setLink(html: string, id: string, href: string | null) {
   });
 }
 
-function makeGoogleMapsEmbedUrl(value: string) {
-  if (value.includes("/maps/embed")) return value;
-  const encoded = encodeURIComponent(value);
-  return `https://www.google.com/maps?q=${encoded}&output=embed`;
-}
-
 function ensureIframeClass(html: string, className: string) {
   return html.replace(/<iframe\b([^>]*)>/i, (match, attrs) => {
     const classMatch = attrs.match(/\bclass=("[^"]*"|'[^']*')/i);
@@ -358,11 +352,12 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
     );
     if (anchorPattern.test(output)) {
       output = setLink(output, placeholderIds.mapLink, data.mapLink);
-      output = setContent(output, placeholderIds.mapLink, data.mapLink);
+      output = setContent(output, placeholderIds.mapLink, "Map Link");
     } else {
-      const embedUrl = makeGoogleMapsEmbedUrl(data.mapLink);
-      const iframe = `<iframe class="oi-map-embed" src="${escapeHtml(embedUrl)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="border:0;width:100%;height:320px;"></iframe>`;
-      output = setRawContent(output, placeholderIds.mapLink, iframe);
+      const anchor = `<a href="${escapeHtml(
+        data.mapLink
+      )}" target="_blank" rel="noreferrer">Map Link</a>`;
+      output = setRawContent(output, placeholderIds.mapLink, anchor);
     }
   } else {
     output = removeElementById(output, placeholderIds.mapLink);
