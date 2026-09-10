@@ -105,7 +105,11 @@ export async function GET(
   }));
 
   const invitation = await db
-    .select({ countMode: invitations.countMode, openRsvpToken: invitations.openRsvpToken })
+    .select({
+      title: invitations.title,
+      countMode: invitations.countMode,
+      openRsvpToken: invitations.openRsvpToken,
+    })
     .from(invitations)
     .where(eq(invitations.id, invitationId))
     .limit(1);
@@ -166,6 +170,7 @@ export async function GET(
 
   return NextResponse.json({
     guestGroups: enriched,
+    invitationTitle: invitation[0]?.title ?? "Untitled invitation",
     countMode: invitation[0]?.countMode ?? "split",
     rsvpOptions: options,
     openRsvpToken: invitation[0]?.openRsvpToken ?? null,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import TopNav from "@/components/TopNav";
 import { dashboardNavLinks } from "@/lib/nav-links";
@@ -37,11 +37,59 @@ type GuestChatMessage = {
   authorRole?: "guest" | "host";
 };
 
+type GuestForm = {
+  displayName: string;
+  email: string;
+  phone: string;
+  notes: string;
+  expectedAdults: string;
+  expectedKids: string;
+  expectedTotal: string;
+  openCount: boolean;
+};
+
+const guestSections = [
+  { id: "guests", label: "Guest list" },
+  { id: "sending", label: "Sending" },
+  { id: "chat", label: "Guest chat" },
+] as const;
+
+type GuestSection = (typeof guestSections)[number]["id"];
+
+function parseGuestCounts(form: GuestForm, countMode: "split" | "total") {
+  const adults = countMode === "split" ? Number(form.expectedAdults) : 0;
+  const kids = countMode === "split" ? Number(form.expectedKids) : 0;
+  const total = countMode === "total" ? Number(form.expectedTotal) : adults + kids;
+  const values = countMode === "total" ? [total] : [adults, kids];
+
+  if (values.some((value) => !Number.isInteger(value) || value < 0)) {
+    return { error: "Guest counts must be whole numbers of zero or more." };
+  }
+  if (form.openCount && total < 1) {
+    return {
+      error:
+        countMode === "total"
+          ? "Open count requires an expected total of at least 1."
+          : "Open count requires at least 1 adult or child.",
+    };
+  }
+
+  return { adults, kids, total };
+}
+
 export default function GuestListPage() {
   const params = useParams();
+  const addGuestButtonRef = useRef<HTMLButtonElement>(null);
   const invitationId = typeof params.invitationId === "string" ? params.invitationId : "";
   const [guestGroups, setGuestGroups] = useState<GuestGroup[]>([]);
+  const [invitationTitle, setInvitationTitle] = useState("");
   const [chatMessages, setChatMessages] = useState<GuestChatMessage[]>([]);
+  const [activeSection, setActiveSection] = useState<GuestSection>("guests");
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const [loadMessage, setLoadMessage] = useState("Loading guests...");
+  const [showAddGuest, setShowAddGuest] = useState(false);
+  const [guestSearch, setGuestSearch] = useState("");
+  const [guestFilter, setGuestFilter] = useState<"all" | "awaiting" | "responded" | "no-email">("all");
   const [countMode, setCountMode] = useState<"split" | "total">("split");
   const [rsvpOptions, setRsvpOptions] = useState<Array<{ key: string; label: string }>>(
     []
@@ -81,6 +129,7 @@ export default function GuestListPage() {
   });
   const [guestMessage, setGuestMessage] = useState("");
   const [guestSaving, setGuestSaving] = useState(false);
+  const [rowSavingId, setRowSavingId] = useState<string | null>(null);
   const [emailSendState, setEmailSendState] = useState<
     Record<string, "idle" | "sending" | "sent" | "error">
   >({});
@@ -93,17 +142,26 @@ export default function GuestListPage() {
   useEffect(() => {
     async function load() {
       if (!invitationId) return;
-      const response = await fetch(`/api/invitations/${invitationId}/guest-groups`);
-      const contentType = response.headers.get("content-type") ?? "";
-      if (contentType.includes("application/json")) {
-        const guestData = await response.json();
-        if (response.ok) {
-          setGuestGroups(guestData.guestGroups ?? []);
-          setCountMode(guestData.countMode ?? "split");
-          setRsvpOptions(guestData.rsvpOptions ?? []);
-          setOpenRsvpToken(guestData.openRsvpToken ?? null);
-          setChatMessages(guestData.messages ?? []);
+      setLoadState("loading");
+      try {
+        const response = await fetch(`/api/invitations/${invitationId}/guest-groups`);
+        const contentType = response.headers.get("content-type") ?? "";
+        const guestData = contentType.includes("application/json")
+          ? await response.json()
+          : {};
+        if (!response.ok) {
+          throw new Error(guestData.error ?? "Failed to load guests.");
         }
+        setGuestGroups(guestData.guestGroups ?? []);
+        setInvitationTitle(guestData.invitationTitle ?? "Untitled invitation");
+        setCountMode(guestData.countMode ?? "split");
+        setRsvpOptions(guestData.rsvpOptions ?? []);
+        setOpenRsvpToken(guestData.openRsvpToken ?? null);
+        setChatMessages(guestData.messages ?? []);
+        setLoadState("ready");
+      } catch (error) {
+        setLoadMessage(error instanceof Error ? error.message : "Failed to load guests.");
+        setLoadState("error");
       }
     }
 
@@ -136,24 +194,12 @@ export default function GuestListPage() {
 
   async function handleGuestSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const adults = countMode === "split" ? Number(guestForm.expectedAdults) : 0;
-    const kids = countMode === "split" ? Number(guestForm.expectedKids) : 0;
-    const total =
-      countMode === "total"
-        ? Number(guestForm.expectedTotal)
-        : Number(guestForm.expectedAdults) + Number(guestForm.expectedKids);
-
-    if (guestForm.openCount) {
-      const hasMinimum = countMode === "total" ? total >= 1 : adults + kids >= 1;
-      if (!hasMinimum) {
-        setGuestMessage(
-          countMode === "total"
-            ? "Open count requires expected total of at least 1"
-            : "Open count requires at least 1 adult or child"
-        );
-        return;
-      }
+    const counts = parseGuestCounts(guestForm, countMode);
+    if (counts.error) {
+      setGuestMessage(counts.error);
+      return;
     }
+    const { adults = 0, kids = 0, total = 0 } = counts;
 
     setGuestSaving(true);
     setGuestMessage("");
@@ -212,6 +258,8 @@ export default function GuestListPage() {
       openCount: false,
     });
     setGuestMessage("Guest added.");
+    setShowAddGuest(false);
+    requestAnimationFrame(() => addGuestButtonRef.current?.focus());
     setGuestSaving(false);
   }
 
@@ -237,55 +285,72 @@ export default function GuestListPage() {
   }
 
   async function saveEdit(groupId: string) {
-    const response = await fetch(
-      `/api/invitations/${invitationId}/guest-groups/${groupId}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          displayName: editForm.displayName,
-          email: editForm.email,
-          phone: editForm.phone,
-          notes: editForm.notes,
-          expectedAdults: countMode === "split" ? Number(editForm.expectedAdults) : 0,
-          expectedKids: countMode === "split" ? Number(editForm.expectedKids) : 0,
-          expectedTotal:
-            countMode === "total"
-              ? Number(editForm.expectedTotal)
-              : Number(editForm.expectedAdults) + Number(editForm.expectedKids),
-          openCount: editForm.openCount,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      setGuestMessage("Failed to update guest");
+    if (!editForm.displayName.trim()) {
+      setGuestMessage("Guest group name is required.");
       return;
     }
+    if (editForm.email && !/^[^\s@]+@[^\s@]+$/.test(editForm.email)) {
+      setGuestMessage("Enter a valid email address.");
+      return;
+    }
+    const counts = parseGuestCounts(editForm, countMode);
+    if (counts.error) {
+      setGuestMessage(counts.error);
+      return;
+    }
+    const { adults = 0, kids = 0, total = 0 } = counts;
+    setRowSavingId(groupId);
+    setGuestMessage("");
+    try {
+      const response = await fetch(
+        `/api/invitations/${invitationId}/guest-groups/${groupId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            displayName: editForm.displayName,
+            email: editForm.email,
+            phone: editForm.phone,
+            notes: editForm.notes,
+            expectedAdults: adults,
+            expectedKids: kids,
+            expectedTotal: total,
+            openCount: editForm.openCount,
+          }),
+        }
+      );
 
-    setGuestGroups((prev) =>
-      prev.map((group) =>
-        group.id === groupId
-          ? {
-              ...group,
-              displayName: editForm.displayName,
-              email: editForm.email || null,
-              phone: editForm.phone || null,
-              notes: editForm.notes || null,
-              expectedAdults:
-                countMode === "split" ? Number(editForm.expectedAdults) : 0,
-              expectedKids:
-                countMode === "split" ? Number(editForm.expectedKids) : 0,
-              expectedTotal:
-                countMode === "total"
-                  ? Number(editForm.expectedTotal)
-                  : Number(editForm.expectedAdults) + Number(editForm.expectedKids),
-              openCount: editForm.openCount,
-            }
-          : group
-      )
-    );
-    setEditingId(null);
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type") ?? "";
+        const data = contentType.includes("application/json") ? await response.json() : {};
+        setGuestMessage(data.error ?? "Failed to update guest.");
+        return;
+      }
+
+      setGuestGroups((prev) =>
+        prev.map((group) =>
+          group.id === groupId
+            ? {
+                ...group,
+                displayName: editForm.displayName,
+                email: editForm.email || null,
+                phone: editForm.phone || null,
+                notes: editForm.notes || null,
+                expectedAdults: adults,
+                expectedKids: kids,
+                expectedTotal: total,
+                openCount: editForm.openCount,
+              }
+            : group
+        )
+      );
+      setEditingId(null);
+      setGuestMessage("Guest updated.");
+    } catch {
+      setGuestMessage("Failed to update guest. Check your connection and try again.");
+    } finally {
+      setRowSavingId(null);
+    }
   }
 
   async function saveResponse(groupId: string) {
@@ -294,48 +359,64 @@ export default function GuestListPage() {
       return;
     }
 
-    const response = await fetch(
-      `/api/invitations/${invitationId}/guest-groups/${groupId}/response`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          optionKey: responseForm.optionKey,
-          adults: Number(responseForm.adults),
-          kids: Number(responseForm.kids),
-          total: Number(responseForm.total),
-          message: responseForm.message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      setGuestMessage("Failed to record response");
+    const adults = countMode === "split" ? Number(responseForm.adults) : 0;
+    const kids = countMode === "split" ? Number(responseForm.kids) : 0;
+    const total = countMode === "total" ? Number(responseForm.total) : adults + kids;
+    const counts = countMode === "total" ? [total] : [adults, kids];
+    if (counts.some((value) => !Number.isInteger(value) || value < 0)) {
+      setGuestMessage("Response counts must be whole numbers of zero or more.");
       return;
     }
 
-    const adults = Number(responseForm.adults);
-    const kids = Number(responseForm.kids);
-    const total =
-      countMode === "total" ? Number(responseForm.total) : adults + kids;
-    setGuestGroups((prev) =>
-      prev.map((group) =>
-        group.id === groupId
-          ? {
-              ...group,
-              response: {
-                optionKey: responseForm.optionKey,
-                adults,
-                kids,
-                total,
-                message: responseForm.message || null,
-                updatedAt: new Date().toISOString(),
-              },
-            }
-          : group
-      )
-    );
-    setEditingId(null);
+    setRowSavingId(groupId);
+    setGuestMessage("");
+    try {
+      const response = await fetch(
+        `/api/invitations/${invitationId}/guest-groups/${groupId}/response`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            optionKey: responseForm.optionKey,
+            adults,
+            kids,
+            total,
+            message: responseForm.message,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type") ?? "";
+        const data = contentType.includes("application/json") ? await response.json() : {};
+        setGuestMessage(data.error ?? "Failed to record response.");
+        return;
+      }
+
+      setGuestGroups((prev) =>
+        prev.map((group) =>
+          group.id === groupId
+            ? {
+                ...group,
+                response: {
+                  optionKey: responseForm.optionKey,
+                  adults,
+                  kids,
+                  total,
+                  message: responseForm.message || null,
+                  updatedAt: new Date().toISOString(),
+                },
+              }
+            : group
+        )
+      );
+      setEditingId(null);
+      setGuestMessage("Response recorded.");
+    } catch {
+      setGuestMessage("Failed to record response. Check your connection and try again.");
+    } finally {
+      setRowSavingId(null);
+    }
   }
 
   async function deleteGuest(groupId: string, displayName: string) {
@@ -477,20 +558,171 @@ export default function GuestListPage() {
     setHostChatSending(false);
   }
 
+  const normalizedSearch = guestSearch.trim().toLowerCase();
+  const filteredGuestGroups = guestGroups.filter((group) => {
+    const matchesSearch =
+      !normalizedSearch ||
+      group.displayName.toLowerCase().includes(normalizedSearch) ||
+      group.email?.toLowerCase().includes(normalizedSearch) ||
+      group.phone?.toLowerCase().includes(normalizedSearch);
+    const matchesFilter =
+      guestFilter === "all" ||
+      (guestFilter === "awaiting" && !group.response) ||
+      (guestFilter === "responded" && Boolean(group.response)) ||
+      (guestFilter === "no-email" && !group.email);
+    return Boolean(matchesSearch && matchesFilter);
+  });
+
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
       <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-16">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
-              Guest list
-            </p>
-            <h1 className="font-[var(--font-display)] text-3xl tracking-[0.12em] sm:text-4xl lg:text-5xl">
-              Manage guests
+          <div className="min-w-0">
+            <a
+              href={`/dashboard/invitations/${invitationId}`}
+              className="text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]"
+            >
+              Invitation editor / Guests
+            </a>
+            <h1 className="mt-2 break-words font-[var(--font-display)] text-3xl tracking-[0.04em] sm:text-4xl">
+              {invitationTitle || "Manage guests"}
             </h1>
           </div>
+          <a
+            className="shrink-0 self-start rounded-full border border-white/20 px-5 py-2.5 text-center text-sm font-medium transition hover:bg-white/10 sm:self-auto"
+            href={`/dashboard/invitations/${invitationId}`}
+          >
+            Edit invitation
+          </a>
         </header>
+
+        <div
+          role="group"
+          aria-label="Guest management sections"
+          className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-white/5 p-1.5"
+        >
+          {guestSections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              aria-pressed={activeSection === section.id}
+              aria-controls="guest-management-section"
+              onClick={() => setActiveSection(section.id)}
+              className={`rounded-xl px-2 py-3 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-[var(--accent)] sm:px-3 ${
+                activeSection === section.id
+                  ? "bg-white/10 text-[var(--foreground)] shadow-sm"
+                  : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
+        {loadState !== "ready" ? (
+          <section
+            id="guest-management-section"
+            className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+          >
+            <p role={loadState === "error" ? "alert" : "status"} className="text-sm text-[var(--muted)]">
+              {loadMessage}
+            </p>
+            {loadState === "error" ? (
+              <button
+                type="button"
+                className="mt-4 rounded-full border border-white/20 px-4 py-2 text-sm"
+                onClick={() => window.location.reload()}
+              >
+                Try again
+              </button>
+            ) : null}
+          </section>
+        ) : null}
+
+        {loadState === "ready" && guestMessage ? (
+          <p role="status" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[var(--muted)]">
+            {guestMessage}
+          </p>
+        ) : null}
+
+        {loadState === "ready" && activeSection === "sending" ? (
+          <section id="guest-management-section" className="grid gap-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
+            <div>
+              <h2 className="text-lg font-semibold">Send invitations</h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Share one open link or email personalized links to guest groups.
+              </p>
+            </div>
+            {openRsvpToken ? (
+              <div className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium">Open invitation link</p>
+                  <p className="mt-1 text-xs text-[var(--muted)]">Anyone with this link can identify themselves and RSVP.</p>
+                </div>
+                <button
+                  className="shrink-0 rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs text-[var(--foreground)] transition"
+                  type="button"
+                  onClick={async () => {
+                    const ok = await copyToClipboard(`${window.location.origin}/i/open/${openRsvpToken}`);
+                    setOpenCopyState(ok ? "copied" : "error");
+                    setTimeout(() => setOpenCopyState("idle"), 1500);
+                  }}
+                >
+                  {openCopyState === "copied"
+                    ? "Link copied"
+                    : openCopyState === "error"
+                      ? "Copy failed"
+                      : "Copy open link"}
+                </button>
+              </div>
+            ) : null}
+            <div className="grid gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+              <div>
+                <h3 className="text-sm font-semibold">Email guest groups</h3>
+                <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+                  {guestGroups.filter((group) => group.email).length} of {guestGroups.length} groups have an email address. Updates always send to every group with an email address.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <button
+                  className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-black disabled:cursor-wait disabled:opacity-60"
+                  type="button"
+                  disabled={bulkSendLoading}
+                  onClick={() => sendAllEmails("invite")}
+                >
+                  {bulkSendLoading ? "Sending..." : "Send invitations"}
+                </button>
+                <button
+                  className="rounded-full border border-white/25 bg-white/5 px-5 py-2.5 text-sm disabled:cursor-wait disabled:opacity-60"
+                  type="button"
+                  disabled={bulkSendLoading}
+                  onClick={() => sendAllEmails("update")}
+                >
+                  {bulkSendLoading ? "Sending..." : "Send update"}
+                </button>
+              </div>
+              <div className="flex items-start justify-between gap-3 border-t border-white/10 pt-4">
+                <span className="min-w-0 flex-1 text-sm leading-5 text-[var(--foreground)]">
+                  Include groups that already received an invitation
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={bulkSendIncludeSent}
+                  aria-label="Include groups that already received an invitation"
+                  className="oi-toggle shrink-0"
+                  onClick={() => setBulkSendIncludeSent((prev) => !prev)}
+                >
+                  <span className="oi-toggle-thumb" />
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {loadState === "ready" && activeSection === "guests" ? (
+          <div id="guest-management-section" className="grid gap-5 [&_label]:normal-case [&_label]:tracking-normal">
 
         <section className="grid gap-3">
           {(() => {
@@ -563,12 +795,12 @@ export default function GuestListPage() {
                   ))}
                 </div>
 
-                <div className="grid gap-3 md:hidden">
+                <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 md:hidden">
                   {rows.map((row) => (
-                    <div key={row.key} className="rounded-2xl border border-white/15 bg-white/5 p-4">
-                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">{row.label}</p>
+                    <div key={row.key} className="rounded-2xl border border-white/15 bg-white/5 p-3">
+                      <p className="text-[10px] leading-4 uppercase tracking-[0.12em] text-[var(--muted)]">{row.label}</p>
                       {countMode === "split" ? (
-                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                        <div className="mt-2 grid grid-cols-3 gap-1 text-center">
                           <div>
                             <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Adults</p>
                             <p className={`font-semibold ${row.isYes ? "text-2xl text-[var(--accent)]" : "text-lg"}`}>{row.adults}</p>
@@ -596,80 +828,26 @@ export default function GuestListPage() {
           })()}
         </section>
 
-        <section className="grid gap-6 rounded-3xl border border-white/15 bg-white/5 p-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-[var(--font-display)] text-3xl tracking-[0.1em]">
-              Add a guest group
-            </h2>
-            <span className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-              {guestGroups.length} groups
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {openRsvpToken ? (
-              <div className="flex items-center gap-2">
-                <button
-                  className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs text-[var(--foreground)] transition"
-                  type="button"
-                  onClick={async () => {
-                    if (!openRsvpToken) return;
-                    const ok = await copyToClipboard(
-                      `${window.location.origin}/i/open/${openRsvpToken}`
-                    );
-                    setOpenCopyState(ok ? "copied" : "error");
-                    setTimeout(() => setOpenCopyState("idle"), 1500);
-                  }}
-                >
-                  Copy open invitation link
-                </button>
-                <span
-                  className={`w-16 text-[10px] uppercase tracking-[0.2em] transition ${
-                    openCopyState === "copied"
-                      ? "text-emerald-300 opacity-100"
-                      : openCopyState === "error"
-                        ? "text-rose-300 opacity-100"
-                        : "opacity-0"
-                  }`}
-                >
-                  {openCopyState === "error" ? "Failed" : "Copied"}
-                </span>
-              </div>
-            ) : null}
-            <button
-              className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
-              type="button"
-              disabled={bulkSendLoading}
-              onClick={() => sendAllEmails("invite")}
-            >
-              {bulkSendLoading ? "Sending..." : "Send all invites"}
-            </button>
-            <button
-              className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
-              type="button"
-              disabled={bulkSendLoading}
-              onClick={() => sendAllEmails("update")}
-            >
-              {bulkSendLoading ? "Sending..." : "Send update"}
-            </button>
-            <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs text-[var(--muted)]">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={bulkSendIncludeSent}
-                className="oi-toggle"
-                onClick={() => setBulkSendIncludeSent((prev) => !prev)}
-              >
-                <span className="oi-toggle-thumb" />
-              </button>
-              <span>Include previously emailed guests</span>
+        <section className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Guest groups</h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">Invite and track households or parties together.</p>
             </div>
-            <span className="text-xs text-[var(--muted)]">
-              Updates always send to all guests with email addresses.
-            </span>
+            <button
+              ref={addGuestButtonRef}
+              type="button"
+              aria-expanded={showAddGuest}
+              aria-controls="add-guest-form"
+              className="shrink-0 self-start rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-black sm:self-auto"
+              onClick={() => setShowAddGuest((current) => !current)}
+            >
+              {showAddGuest ? "Close form" : "Add guest group"}
+            </button>
           </div>
 
-          <form onSubmit={handleGuestSubmit} className="grid gap-4 md:grid-cols-2">
+          {showAddGuest ? (
+          <form id="add-guest-form" onSubmit={handleGuestSubmit} className="grid gap-4 border-t border-white/10 pt-5 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Guest group name
@@ -690,6 +868,7 @@ export default function GuestListPage() {
               </label>
               <input
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                type="email"
                 value={guestForm.email}
                 onChange={(event) =>
                   setGuestForm((prev) => ({ ...prev, email: event.target.value }))
@@ -707,6 +886,7 @@ export default function GuestListPage() {
                     className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
                     type="number"
                     min="0"
+                    step="1"
                     value={guestForm.expectedAdults}
                     onChange={(event) =>
                       setGuestForm((prev) => ({
@@ -724,6 +904,7 @@ export default function GuestListPage() {
                     className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
                     type="number"
                     min="0"
+                    step="1"
                     value={guestForm.expectedKids}
                     onChange={(event) =>
                       setGuestForm((prev) => ({
@@ -743,6 +924,7 @@ export default function GuestListPage() {
                   className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
                   type="number"
                   min="0"
+                  step="1"
                   value={guestForm.expectedTotal}
                   onChange={(event) =>
                     setGuestForm((prev) => ({
@@ -753,46 +935,55 @@ export default function GuestListPage() {
                 />
               </div>
             )}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Phone
-              </label>
-              <input
-                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
-                value={guestForm.phone}
-                onChange={(event) =>
-                  setGuestForm((prev) => ({ ...prev, phone: event.target.value }))
-                }
-                placeholder="(555) 555-5555"
-              />
-            </div>
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Guest message <span className="normal-case">(id: guest_message)</span>
-              </label>
-              <textarea
-                className="min-h-[88px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
-                value={guestForm.notes}
-                onChange={(event) =>
-                  setGuestForm((prev) => ({ ...prev, notes: event.target.value }))
-                }
-                placeholder="Optional note shown only on this guest's invitation"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
-              <span className="text-sm text-[var(--muted)]">Allow open count</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={guestForm.openCount}
-                onClick={() =>
-                  setGuestForm((prev) => ({ ...prev, openCount: !prev.openCount }))
-                }
-                className="oi-toggle"
-              >
-                <span className="oi-toggle-thumb" />
-              </button>
-            </div>
+            <details className="rounded-xl border border-white/10 px-4 py-3 md:col-span-2">
+              <summary className="cursor-pointer text-sm text-[var(--muted)]">
+                Additional details{guestForm.phone || guestForm.notes || guestForm.openCount ? " (added)" : " (optional)"}
+              </summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Phone
+                  </label>
+                  <input
+                    className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                    type="tel"
+                    value={guestForm.phone}
+                    onChange={(event) =>
+                      setGuestForm((prev) => ({ ...prev, phone: event.target.value }))
+                    }
+                    placeholder="(555) 555-5555"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+                  <span className="text-sm text-[var(--muted)]">Allow open count</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={guestForm.openCount}
+                    aria-label="Allow open guest count"
+                    onClick={() =>
+                      setGuestForm((prev) => ({ ...prev, openCount: !prev.openCount }))
+                    }
+                    className="oi-toggle shrink-0"
+                  >
+                    <span className="oi-toggle-thumb" />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-2 md:col-span-2">
+                  <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Guest message <span className="normal-case">(id: guest_message)</span>
+                  </label>
+                  <textarea
+                    className="min-h-[88px] rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                    value={guestForm.notes}
+                    onChange={(event) =>
+                      setGuestForm((prev) => ({ ...prev, notes: event.target.value }))
+                    }
+                    placeholder="Optional note shown only on this guest's invitation"
+                  />
+                </div>
+              </div>
+            </details>
             <div className="flex items-center gap-3">
               <button
                 type="submit"
@@ -801,18 +992,46 @@ export default function GuestListPage() {
               >
                 {guestSaving ? "Adding..." : "Add guest"}
               </button>
-              {guestMessage ? (
-                <span className="text-sm text-[var(--muted)]">{guestMessage}</span>
-              ) : null}
             </div>
           </form>
+          ) : null}
         </section>
 
         <section className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <label className="min-w-0">
+              <span className="sr-only">Search guest groups</span>
+              <input
+                type="search"
+                className="h-11 w-full min-w-0 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                value={guestSearch}
+                onChange={(event) => setGuestSearch(event.target.value)}
+                placeholder="Search name, email, or phone"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Filter guest groups</span>
+              <select
+                className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)] sm:w-auto"
+                value={guestFilter}
+                onChange={(event) => setGuestFilter(event.target.value as typeof guestFilter)}
+              >
+                <option value="all">All groups</option>
+                <option value="awaiting">Awaiting response</option>
+                <option value="responded">Responded</option>
+                <option value="no-email">Missing email</option>
+              </select>
+            </label>
+          </div>
+          <p className="text-xs text-[var(--muted)]">
+            Showing {filteredGuestGroups.length} of {guestGroups.length} groups
+          </p>
           {guestGroups.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">No guests added yet.</p>
+          ) : filteredGuestGroups.length === 0 ? (
+            <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-[var(--muted)]">No guest groups match this search.</p>
           ) : (
-            guestGroups.map((group) => (
+            filteredGuestGroups.map((group) => (
               <div
                 key={group.id}
                 className="rounded-2xl border border-white/15 bg-white/5 p-4"
@@ -826,7 +1045,7 @@ export default function GuestListPage() {
                       {group.email ?? "No email"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 self-start">
+                  <div className="flex flex-wrap items-center gap-2 self-start">
                     <button
                       className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs text-[var(--foreground)] transition"
                       type="button"
@@ -860,6 +1079,8 @@ export default function GuestListPage() {
                     <div className="relative" data-guest-actions-root="true">
                       <button
                         type="button"
+                        aria-expanded={actionMenuOpenId === group.id}
+                        aria-controls={`guest-actions-${group.id}`}
                         className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
                         onClick={() =>
                           setActionMenuOpenId((prev) => (prev === group.id ? null : group.id))
@@ -868,12 +1089,12 @@ export default function GuestListPage() {
                         Actions
                       </button>
                       {actionMenuOpenId === group.id ? (
-                        <div className="absolute right-0 z-20 mt-2 grid min-w-[170px] gap-1 rounded-xl border border-white/15 bg-[#111125] p-2 text-xs shadow-xl">
+                        <div id={`guest-actions-${group.id}`} className="absolute right-0 z-20 mt-2 grid min-w-[170px] gap-1 rounded-xl border border-white/15 bg-[#111125] p-2 text-xs shadow-xl">
                           <a
                             className="rounded-lg px-3 py-2 text-left text-[var(--foreground)] hover:bg-white/10"
                             href={`/i/${group.token}`}
-                            target="_blank"
-                            rel="noreferrer"
+                           target="_blank"
+                            rel="noopener noreferrer"
                             onClick={() => setActionMenuOpenId(null)}
                           >
                             Open link
@@ -1011,8 +1232,9 @@ export default function GuestListPage() {
                         <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                           Name
                         </label>
-                        <input
-                          className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+                         <input
+                           className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+                           required
                           value={editForm.displayName}
                           onChange={(event) =>
                             setEditForm((prev) => ({ ...prev, displayName: event.target.value }))
@@ -1023,8 +1245,9 @@ export default function GuestListPage() {
                         <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                           Email
                         </label>
-                        <input
-                          className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+                         <input
+                           className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+                           type="email"
                           value={editForm.email}
                           onChange={(event) =>
                             setEditForm((prev) => ({ ...prev, email: event.target.value }))
@@ -1035,8 +1258,9 @@ export default function GuestListPage() {
                         <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                           Phone
                         </label>
-                        <input
-                          className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+                         <input
+                           className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+                           type="tel"
                           value={editForm.phone}
                           onChange={(event) =>
                             setEditForm((prev) => ({ ...prev, phone: event.target.value }))
@@ -1066,8 +1290,9 @@ export default function GuestListPage() {
                             </label>
                             <input
                               className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
-                              type="number"
-                              min="0"
+                               type="number"
+                               min="0"
+                               step="1"
                               value={editForm.expectedAdults}
                               onChange={(event) =>
                                 setEditForm((prev) => ({
@@ -1083,8 +1308,9 @@ export default function GuestListPage() {
                             </label>
                             <input
                               className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
-                              type="number"
-                              min="0"
+                               type="number"
+                               min="0"
+                               step="1"
                               value={editForm.expectedKids}
                               onChange={(event) =>
                                 setEditForm((prev) => ({
@@ -1102,8 +1328,9 @@ export default function GuestListPage() {
                           </label>
                           <input
                             className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
-                            type="number"
-                            min="0"
+                             type="number"
+                             min="0"
+                             step="1"
                             value={editForm.expectedTotal}
                             onChange={(event) =>
                               setEditForm((prev) => ({
@@ -1122,6 +1349,7 @@ export default function GuestListPage() {
                         type="button"
                         role="switch"
                         aria-checked={editForm.openCount}
+                        aria-label={`Allow open guest count for ${group.displayName}`}
                         onClick={() =>
                           setEditForm((prev) => ({ ...prev, openCount: !prev.openCount }))
                         }
@@ -1135,9 +1363,10 @@ export default function GuestListPage() {
                       <button
                         className="rounded-full bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-black"
                         type="button"
+                        disabled={rowSavingId === group.id}
                         onClick={() => saveEdit(group.id)}
                       >
-                        Save guest
+                        {rowSavingId === group.id ? "Saving..." : "Save guest"}
                       </button>
                       <button
                         className="rounded-full border border-white/25 bg-white/5 px-4 py-2 text-xs"
@@ -1202,6 +1431,7 @@ export default function GuestListPage() {
                                 className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
                                 type="number"
                                 min="0"
+                                step="1"
                                 value={responseForm.adults}
                                 onChange={(event) =>
                                   setResponseForm((prev) => ({
@@ -1219,6 +1449,7 @@ export default function GuestListPage() {
                                 className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
                                 type="number"
                                 min="0"
+                                step="1"
                                 value={responseForm.kids}
                                 onChange={(event) =>
                                   setResponseForm((prev) => ({
@@ -1238,6 +1469,7 @@ export default function GuestListPage() {
                               className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
                               type="number"
                               min="0"
+                              step="1"
                               value={responseForm.total}
                               onChange={(event) =>
                                 setResponseForm((prev) => ({
@@ -1253,9 +1485,10 @@ export default function GuestListPage() {
                         <button
                           className="rounded-full bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-black"
                           type="button"
+                          disabled={rowSavingId === group.id}
                           onClick={() => saveResponse(group.id)}
                         >
-                          Save response
+                          {rowSavingId === group.id ? "Saving..." : "Save response"}
                         </button>
                       </div>
                     </div>
@@ -1265,11 +1498,13 @@ export default function GuestListPage() {
             ))
           )}
         </section>
+          </div>
+        ) : null}
 
-        <section className="rounded-2xl border border-white/15 bg-white/5 p-5">
-          <h2 className="font-[var(--font-display)] text-3xl tracking-[0.08em]">
-            Guest chat
-          </h2>
+        {loadState === "ready" && activeSection === "chat" ? (
+        <section id="guest-management-section" className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
+          <h2 className="text-lg font-semibold">Guest chat</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">Messages here are visible to guests when guest-list sharing is enabled.</p>
           <div className="mt-4 grid max-h-[320px] gap-3 overflow-y-auto pr-1">
             {chatMessages.length > 0 ? (
               chatMessages.map((entry) => (
@@ -1305,6 +1540,7 @@ export default function GuestListPage() {
             </button>
           </form>
         </section>
+        ) : null}
       </main>
     </div>
   );
