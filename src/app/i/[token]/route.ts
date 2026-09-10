@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { formatDate, formatTime } from "@/lib/date-format";
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
+import { addInvitationSafetyNotice } from "@/lib/invitation-safety";
 import { injectTemplateData, sanitizeTemplate } from "@/lib/template";
 import { renderRsvpForm } from "@/lib/rsvp";
 import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
@@ -173,13 +174,13 @@ export async function GET(
     });
   } catch {
     injected = `<!doctype html><html><head><meta charset="utf-8"><title>Template not available</title></head><body style="font-family: sans-serif; padding: 40px; background: #0a0a14; color: #fef7ff;"><h1>Template not available</h1><p>Check that the live template URL is reachable and currently serving HTML.</p></body></html>`;
-    return new NextResponse(injected, {
+    return new NextResponse(addInvitationSafetyNotice(injected), {
       status: 502,
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }
 
-  return new NextResponse(injected, {
+  return new NextResponse(addInvitationSafetyNotice(injected), {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Content-Security-Policy": "default-src 'none'; img-src https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com https:; font-src https://fonts.gstatic.com https: data:; frame-src https://www.google.com/maps https://www.google.com/maps/embed;",
