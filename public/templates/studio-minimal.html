@@ -188,6 +188,39 @@
         text-transform: uppercase;
         cursor: pointer;
       }
+      /* 5 x 7 export: 480 x 672 CSS px becomes 1500 x 2100 px at 300 DPI.
+         Keep print overrides after responsive screen styles. */
+      html.oi-print body {
+        width: var(--oi-print-width, 480px);
+        margin: 0;
+      }
+
+      .oi-print .frame {
+        min-height: var(--oi-print-height, 672px);
+        padding: 18px;
+      }
+
+      .oi-print .card {
+        width: 100%;
+        min-height: calc(var(--oi-print-height, 672px) - 36px);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .oi-print h1 {
+        font-size: 34px;
+        line-height: 1.15;
+        letter-spacing: 0.05em;
+        overflow-wrap: anywhere;
+      }
+
+      .oi-print .host { font-size: 11px; letter-spacing: 0.18em; }
+      .oi-print .rule { margin: 18px 0; }
+      .oi-print .details { gap: 8px; font-size: 17px; }
+      .oi-print .notes, .oi-print .map, .oi-print .calendar { display: none; }
+      .oi-print .rsvp { margin-top: auto; padding-top: 16px; }
+      .oi-print .footer { margin-top: 16px; font-size: 10px; letter-spacing: 0.14em; }
     </style>
   </head>
   <body>

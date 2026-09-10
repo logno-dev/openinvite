@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import TopNav from "@/components/TopNav";
+import PrintExport from "@/components/PrintExport";
 import { dashboardNavLinks } from "@/lib/nav-links";
 import { commonTimezones } from "@/lib/timezones";
 
@@ -944,6 +945,9 @@ export default function EditInvitationPage() {
               </a>
             ) : null}
           </div>
+          ) : null}
+          {activeSection === "design" && form.previewToken ? (
+            <PrintExport key={activeTouchpointKind} previewToken={form.previewToken} kind={activeTouchpointKind} />
           ) : null}
           {activeSection === "rsvp" ? (
           <div className="border-t border-white/10 pt-4">

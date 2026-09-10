@@ -197,6 +197,42 @@
         text-transform: uppercase;
         cursor: pointer;
       }
+      /* 5 x 7 export: retain the dark card, warm glow, and display type.
+         The print-specific grid overrides the screen's mobile breakpoint. */
+      html.oi-print body {
+        width: var(--oi-print-width, 480px);
+        margin: 0;
+      }
+
+      .oi-print .frame {
+        min-height: var(--oi-print-height, 672px);
+        padding: 18px;
+      }
+
+      .oi-print .card {
+        width: 100%;
+        min-height: calc(var(--oi-print-height, 672px) - 36px);
+        padding: 28px;
+        display: flex;
+      }
+
+      .oi-print .glow { inset: 0; }
+      .oi-print .content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+      .oi-print h1 {
+        font-size: 34px;
+        line-height: 1.15;
+        letter-spacing: 0.06em;
+        overflow-wrap: anywhere;
+      }
+
+      .oi-print .host { font-size: 11px; letter-spacing: 0.18em; }
+      .oi-print .divider { margin: 18px 0; }
+      .oi-print .grid { grid-template-columns: 1fr; gap: 0; }
+      .oi-print .details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
+      .oi-print .value { font-size: 17px; overflow-wrap: anywhere; }
+      .oi-print .label { letter-spacing: 0.2em; }
+      .oi-print .notes, .oi-print .map { display: none; }
+      .oi-print .rsvp { margin-top: auto; padding-top: 16px; }
     </style>
   </head>
   <body>

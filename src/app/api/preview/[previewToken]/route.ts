@@ -50,7 +50,7 @@ export async function GET(
     .where(eq(rsvpOptions.invitationId, record.id));
 
   return NextResponse.json({
-    invitation: record,
+    invitation: { ...record, title: touchpoint?.title ?? record.title },
     touchpoint: touchpoint
       ? {
           id: touchpoint.id,

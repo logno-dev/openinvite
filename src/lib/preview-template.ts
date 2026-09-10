@@ -108,7 +108,7 @@ export type PreviewPayload = {
 export function applyPreviewDataToHtml(
   html: string,
   data: PreviewPayload,
-  mode: "guest" | "open"
+  mode: "guest" | "open" | "print"
 ) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
@@ -201,7 +201,9 @@ export function applyPreviewDataToHtml(
   const responseEl = doc.getElementById("response");
   if (responseEl) {
     const collectRsvp = data.touchpoint?.collectRsvp ?? true;
-    if (!collectRsvp) {
+    if (mode === "print") {
+      responseEl.replaceChildren();
+    } else if (!collectRsvp) {
       responseEl.remove();
     } else {
     const responseHtml =

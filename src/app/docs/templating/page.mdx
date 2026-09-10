@@ -35,6 +35,174 @@ Use these ids in your HTML so OpenInvite can inject values:
 </section>
 ```
 
+## Print export
+
+In the invitation editor, open **Design & preview**, save your changes, then use
+**Print / export**. Choose the draft or live template, generate a preview, and
+download a **5 x 7-inch portrait PNG at 300 DPI** (1500 x 2100 pixels).
+
+The `response` placeholder is replaced with a QR code linking to the public
+digital invitation. If the placeholder is missing, the QR code is added at the
+end of the main content. The QR always opens the live invitation, including when
+you export a draft or a save-the-date. Set a working live invitation template
+before distributing printed cards.
+
+Print exports keep the title, hosts, date, time, venue, address, and QR code.
+Notes, registry links, maps, and guest-specific placeholders are omitted. The
+surrounding layout, illustrations, borders, backgrounds, and typography remain
+under your template's control. OpenInvite does not replace the design with a
+generic card or rewrite its spacing.
+
+<h3 id="print-layout-css">Print layout CSS</h3>
+
+The renderer adds **`oi-print` to the HTML element** and uses a **480 x 672 CSS
+pixel viewport**: 5 x 7 inches at the browser's 96 CSS pixels per inch. It then
+exports at 1500 x 2100 pixels with 300-DPI metadata. Design in CSS pixels, not
+1500 x 2100 layout pixels; the higher resolution is applied during export.
+
+Use `.oi-print` selectors in the same stylesheet as your digital design.
+**`@media print` and `@page` alone do not affect PNG export** because it is
+captured as a screen-rendered image. Put these rules after your mobile media
+queries so the narrow export viewport does not accidentally trigger a long,
+single-column mobile layout.
+
+Here is a starting point for templates with `.frame` and `.card` wrappers.
+Adapt the selectors and spacing to your artwork; existing colors, backgrounds,
+fonts, and decorative elements are inherited from the digital template.
+
+```css
+html.oi-print {
+  /* Renderer defaults; these fallbacks also work when previewing locally. */
+  --oi-print-width: 480px;
+  --oi-print-height: 672px;
+  --oi-print-qr-size: 112px;
+  --oi-print-qr-padding: 8px;
+  --oi-print-qr-margin: 0 auto;
+}
+
+.oi-print body {
+  margin: 0;
+  width: var(--oi-print-width);
+}
+
+.oi-print .frame {
+  box-sizing: border-box;
+  min-height: var(--oi-print-height);
+  padding: 18px;
+}
+
+.oi-print .card {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: calc(var(--oi-print-height) - 36px);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.oi-print #title {
+  font-size: 34px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.oi-print .details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.oi-print .rsvp {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+/* Hide optional wrappers, including their labels and reserved grid space. */
+.oi-print .notes,
+.oi-print .map,
+.oi-print .calendar {
+  display: none;
+}
+```
+
+The width and height variables describe the fixed export viewport; changing
+their values does not change the PNG's physical size. Use them to size your
+wrappers consistently. For a design without an outer mat, use zero frame padding
+and a full 672px card height. Account for borders and padding with
+`box-sizing: border-box`.
+
+<h3 id="print-optional-sections">Optional sections and decorations</h3>
+
+Mark a whole digital-only section with **`oi-print-hide`** when it should be
+removed from the print document, including its heading. The class has no special
+effect on the digital invitation.
+
+```html
+<section class="travel-details oi-print-hide">
+  <h2>Travel and accommodation</h2>
+  <div id="notes_2"></div>
+</section>
+```
+
+Only mark content sections this way. Keep artwork and shared background wrappers
+outside hidden sections so their design remains visible. Without an explicit
+marker, OpenInvite removes optional placeholders but preserves their wrappers;
+use your print CSS to hide those wrappers or reuse them in the card layout.
+
+<h3 id="print-qr-styling">Placing and styling the QR code</h3>
+
+Place a `div` with `id="response"` exactly where you want the printed QR code.
+The generated structure is `#response > #oi-print-qr`, containing an `img` and a
+caption `span`. The QR's black-and-white pixels include a four-module quiet zone.
+
+- `--oi-print-qr-size` controls the square image size (default **112px**).
+- `--oi-print-qr-padding` controls the white panel padding (default **8px**).
+- `--oi-print-qr-margin` controls its position (default **0 auto**).
+- Use `html.oi-print #oi-print-qr` or its `span` to customize the panel or caption.
+
+Reserve approximately **180px of vertical space** for the complete QR panel.
+Keep the code square, visible, and free of overlapping artwork. Avoid recoloring,
+cropping, or filtering the QR image. The renderer requires the exported QR image
+to be at least 300 pixels (one printed inch) on each side.
+
+<h3 id="print-layout-testing">Checking the layout</h3>
+
+Use **Generate print preview** with realistic titles and venue addresses. You can
+also add `class="oi-print"` to your template's HTML element locally and inspect
+it at 480 x 672 pixels; use OpenInvite for the injected data and actual QR code.
+Remove the class from the source before publishing the digital template.
+
+If the content is taller than the card, adjust your own print typography, grid,
+and spacing. Do not use `overflow: hidden` to disguise overflowing text or a QR
+code. OpenInvite fits the full rendered page into the PNG, adding white margins
+when necessary. If fitting would make the QR too small, it asks for print CSS
+instead of replacing the design. No bleed or crop marks are added automatically.
+
+The bundled **Studio Minimal**, **Garden Party**, and **Candlelight Modern**
+templates include complete `.oi-print` examples that preserve their individual
+designs. You can use their print blocks as a starting point for hosted templates.
+
+Export runs in your browser. External templates, images, and fonts must permit
+CORS requests from OpenInvite. Relative assets resolve against the template URL.
+Linked stylesheets are requested with `crossorigin="anonymous"` before the print
+iframe loads, allowing the exporter to read their CSS rules. The CSS server must
+return `Access-Control-Allow-Origin: *` for public assets, or allow your deployed
+OpenInvite origin explicitly. Font and image servers need their own CORS headers.
+Setting the HTML attribute alone does not grant cross-origin access.
+
+For external styles, prefer a direct link:
+
+```html
+<link rel="stylesheet" href="https://templates.example.com/card.css" crossorigin="anonymous" />
+```
+
+The automatic attribute applies to stylesheet links, not nested CSS `@import`
+rules. If an imported stylesheet triggers a CSSOM access error, link it directly
+in the HTML with CORS enabled instead.
+
+Interactive forms, calendar links, and embedded maps are omitted from the image.
+Print the downloaded file at actual size (100%).
+
 ## Map behavior
 
 If you provide a map embed HTML snippet, it is injected into `map_link`. If you
