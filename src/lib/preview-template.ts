@@ -1,5 +1,6 @@
 import { renderRsvpForm } from "@/lib/rsvp";
 import { formatDate, formatTime } from "@/lib/date-format";
+import { stripTemplateNavigation } from "@/lib/template-navigation";
 
 function escapeHtml(value: string) {
   return value
@@ -112,6 +113,7 @@ export function applyPreviewDataToHtml(
 ) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
+  stripTemplateNavigation(doc);
 
   const details = data.details;
   const dateValue = details?.eventDate ?? details?.date ?? null;

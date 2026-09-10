@@ -69,7 +69,6 @@ const allowedTags = [
   "footer",
   "hr",
   "img",
-  "iframe",
   "li",
   "link",
   "main",
@@ -87,21 +86,10 @@ const allowedTags = [
 const allowedAttributes = {
   "*": ["class", "id", "style", "role", "aria-*"],
   html: ["lang", "dir"],
-  a: ["href", "target", "rel", "class", "id", "style"],
+  // Template anchors retain their appearance, but destinations come from data injection.
+  a: ["class", "id", "style"],
   img: ["src", "alt", "class", "id", "style"],
   link: ["href", "rel", "as", "type", "crossorigin"],
-  iframe: [
-    "src",
-    "title",
-    "loading",
-    "allowfullscreen",
-    "referrerpolicy",
-    "class",
-    "id",
-    "style",
-    "width",
-    "height",
-  ],
   meta: ["charset", "name", "content", "http-equiv"],
   ...Object.fromEntries(svgTags.map((tag) => [tag, svgAttributes])),
   use: [...svgAttributes, "href", "xlink:href"],
@@ -289,9 +277,10 @@ export function sanitizeTemplate(html: string) {
       link: ["https"],
     },
     disallowedTagsMode: "discard",
+    exclusiveFilter: (frame) => frame.tag === "meta" && "http-equiv" in frame.attribs,
     transformTags: { use: localSvgReference, textpath: localSvgReference, textPath: localSvgReference },
     // Discard document-title text too, so it cannot leak into the visible page.
-    nonTextTags: ["style", "script", "textarea", "option", "xmp", "title", "foreignobject", "foreignObject", "animate", "animatetransform", "animateTransform", "animatemotion", "animateMotion", "set"],
+    nonTextTags: ["style", "script", "textarea", "option", "xmp", "title", "iframe", "object", "embed", "foreignobject", "foreignObject", "animate", "animatetransform", "animateTransform", "animatemotion", "animateMotion", "set"],
   });
 }
 

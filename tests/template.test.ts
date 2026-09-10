@@ -90,3 +90,36 @@ test("map links replace existing template hrefs and escape query strings", () =>
   });
   assert.ok(result.includes('href="https://maps.example/?x=1&amp;y=2"'));
 });
+
+test("template navigation is stripped while link content, styling, and artwork remain", () => {
+  const result = sanitizeTemplate('<head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=https://evil.example"><base href="https://evil.example"><link rel="stylesheet" href="https://styles.example/card.css"></head><a class="button" id="custom-link" style="color: red" href="https://evil.example" target="_top" ping="https://evil.example/track">Pay here</a><a href="/auth">Verify account</a><a href="mailto:evil@example.com">Contact us</a><iframe src="https://evil.example">Bad frame</iframe><svg><defs><path id="flower" d="M0 0L1 1"></path></defs><a xlink:href="https://evil.example"><use href="#flower"></use></a></svg>');
+  assert.ok(!result.includes("evil.example"));
+  assert.ok(!result.includes('href="/auth"'));
+  assert.ok(!result.includes("mailto:"));
+  assert.ok(!result.includes("<iframe"));
+  assert.ok(!result.includes("Bad frame"));
+  assert.ok(result.includes('<a class="button" id="custom-link" style="color:red">Pay here</a>'));
+  assert.ok(result.includes('<link rel="stylesheet" href="https://styles.example/card.css" />'));
+  assert.ok(result.includes('<use href="#flower"></use>'));
+});
+
+test("configured invitation links, maps, and RSVP forms are inserted after stripping designer links", () => {
+  const template = sanitizeTemplate('<a id="map_link" href="https://evil.example">Old map</a><div id="registry_link"></div><div id="calendar_link"></div><div id="response"></div><div id="notes"></div>');
+  const result = injectTemplateData(template, {
+    ...data,
+    mapLink: "https://maps.example/venue",
+    registryLink: "https://registry.example/list",
+    calendarLink: "/api/calendar/token",
+    responseHtml: '<form action="/api/rsvp" method="post"><button>Submit RSVP</button></form>',
+    notes: "[Host-provided details](https://host.example/details)",
+  });
+  assert.ok(!result.includes("evil.example"));
+  assert.ok(result.includes('href="https://maps.example/venue"'));
+  assert.ok(result.includes('href="https://registry.example/list"'));
+  assert.ok(result.includes('href="/api/calendar/token"'));
+  assert.ok(result.includes('action="/api/rsvp"'));
+  assert.ok(result.includes('href="https://host.example/details"'));
+  const map = injectTemplateData(template, { ...data, mapEmbed: '<iframe src="https://www.google.com/maps/embed?pb=example"></iframe>' });
+  assert.ok(map.includes('<iframe'));
+  assert.ok(map.includes('src="https://www.google.com/maps/embed?pb=example"'));
+});
