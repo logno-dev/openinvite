@@ -108,12 +108,21 @@ type HostNotification = {
   notifyOnRsvp: boolean;
 };
 
+const editorSections = [
+  { id: "details", label: "Event details", description: "The when, where, and what your guests need to know." },
+  { id: "design", label: "Design & preview", description: "Connect your templates and preview the guest experience." },
+  { id: "rsvp", label: "RSVP & guests", description: "Choose how guests respond and what they can see." },
+  { id: "hosts", label: "Hosts", description: "Invite co-hosts and manage RSVP email notifications." },
+] as const;
+
 export default function EditInvitationPage() {
   const params = useParams();
   const invitationId = typeof params.invitationId === "string" ? params.invitationId : "";
   const [form, setForm] = useState<InvitationForm | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<(typeof editorSections)[number]["id"]>("details");
+  const section = editorSections.find((item) => item.id === activeSection)!;
   const [hostInviteLink, setHostInviteLink] = useState<string | null>(null);
   const [hostInviteCopyState, setHostInviteCopyState] = useState<
     "idle" | "copied" | "error"
@@ -384,6 +393,11 @@ export default function EditInvitationPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!form) return;
+    if (!form.title.trim()) {
+      setActiveSection("details");
+      setMessage("Please add a title before saving.");
+      return;
+    }
     setSaving(true);
     setMessage("");
 
@@ -516,7 +530,7 @@ export default function EditInvitationPage() {
       <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
         <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
         <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-16 sm:px-6">
-          <p className="text-sm text-[var(--muted)]">Loading invitation...</p>
+          <p role="status" className="text-sm text-[var(--muted)]">{message || "Loading invitation..."}</p>
         </main>
       </div>
     );
@@ -525,29 +539,36 @@ export default function EditInvitationPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">
       <TopNav links={dashboardNavLinks} homeHref="/dashboard" showLogout />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-16 sm:px-6">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">
-            Edit invitation
-          </p>
-          <h1 className="font-[var(--font-display)] text-3xl tracking-[0.12em] sm:text-4xl lg:text-5xl">
-            {form.title}
-          </h1>
-          <p className="mt-3 text-sm text-[var(--muted)]">
-            Template labels include the div id in parentheses.
-          </p>
-        </div>
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <a href="/dashboard" className="text-xs text-[var(--muted)] transition hover:text-[var(--foreground)]">
+              Dashboard / Invitation editor
+            </a>
+            <h1 className="mt-2 break-words font-[var(--font-display)] text-3xl tracking-[0.04em] sm:text-4xl">
+              {form.title || "Untitled invitation"}
+            </h1>
+          </div>
+          <a
+            className="shrink-0 self-start rounded-full border border-white/20 px-5 py-2.5 text-center text-sm font-medium transition hover:bg-white/10 sm:self-auto"
+            href={`/dashboard/invitations/${invitationId}/guests`}
+          >
+            Manage guests
+          </a>
+        </header>
         <form
           onSubmit={handleSubmit}
-          className="grid gap-6 overflow-x-hidden rounded-3xl border border-white/15 bg-white/5 p-4 sm:p-6 [&_div]:max-w-full [&_div]:min-w-0 [&_section]:max-w-full [&_section]:min-w-0 [&_input]:max-w-full [&_input]:min-w-0 [&_input]:w-full [&_select]:max-w-full [&_select]:min-w-0 [&_select]:w-full [&_textarea]:max-w-full [&_textarea]:min-w-0 [&_textarea]:w-full"
+          className="grid gap-5 [&_div]:max-w-full [&_div]:min-w-0 [&_section]:max-w-full [&_section]:min-w-0 [&_input]:max-w-full [&_input]:min-w-0 [&_input]:w-full [&_select]:max-w-full [&_select]:min-w-0 [&_select]:w-full [&_textarea]:max-w-full [&_textarea]:min-w-0 [&_textarea]:w-full [&_label]:text-xs [&_label]:normal-case [&_label]:tracking-normal [&_label_span]:hidden"
         >
-          <section className="grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
-              Touchpoint
+          <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-[var(--muted)]">
+              Currently editing
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
+                aria-pressed={activeTouchpointKind === "invitation"}
+                disabled={saving}
                 className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.18em] ${
                   activeTouchpointKind === "invitation"
                     ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
@@ -559,6 +580,8 @@ export default function EditInvitationPage() {
               </button>
               <button
                 type="button"
+                aria-pressed={activeTouchpointKind === "save_the_date"}
+                disabled={saving}
                 className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.18em] ${
                   activeTouchpointKind === "save_the_date"
                     ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
@@ -569,6 +592,30 @@ export default function EditInvitationPage() {
                 Save the date
               </button>
             </div>
+          </section>
+
+          <div role="group" aria-label="Editor sections" className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-white/5 p-1.5 sm:grid-cols-4">
+            {editorSections.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={activeSection === item.id}
+                aria-controls="editor-section"
+                onClick={() => setActiveSection(item.id)}
+                className={`rounded-xl px-3 py-3 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-[var(--accent)] ${activeSection === item.id ? "bg-white/10 text-[var(--foreground)] shadow-sm" : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--foreground)]"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <section id="editor-section" aria-labelledby="editor-section-heading" className="grid gap-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6">
+            <div>
+              <h2 id="editor-section-heading" className="text-lg font-semibold">{section.label}</h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">{section.description}</p>
+            </div>
+
+            {activeSection === "rsvp" ? (
             <div className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <span className="min-w-0 flex-1 text-sm leading-5 text-[var(--foreground)]">
                 Collect RSVP responses for this touchpoint
@@ -577,16 +624,18 @@ export default function EditInvitationPage() {
                 type="button"
                 role="switch"
                 aria-checked={form.collectRsvp}
+                aria-label="Collect RSVP responses"
                 onClick={() => updateField("collectRsvp", !form.collectRsvp)}
                 className="oi-toggle shrink-0"
               >
                 <span className="oi-toggle-thumb" />
               </button>
             </div>
-          </section>
+            ) : null}
 
+          {activeSection === "details" ? (
           <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:col-span-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Title <span className="normal-case">(id: title)</span>
               </label>
@@ -597,6 +646,10 @@ export default function EditInvitationPage() {
                 required
               />
             </div>
+          </div>
+          ) : null}
+          {activeSection === "design" ? (
+          <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Draft template URL
@@ -619,6 +672,15 @@ export default function EditInvitationPage() {
                 placeholder="https://cdn.example.com/invite.html"
               />
             </div>
+            <p className="text-xs leading-5 text-[var(--muted)] md:col-span-2">
+              Use draft for development and live for the version your guests see. Save changes before opening a preview.
+              {" "}<a href="/docs/templating" target="_blank" rel="noreferrer" className="text-[var(--accent)] underline underline-offset-4">Template field reference</a>
+            </p>
+          </div>
+          ) : null}
+          {activeSection === "details" ? (
+          <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
+            <h3 className="text-sm font-semibold md:col-span-2">Date & time</h3>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Event date <span className="normal-case">(id: date)</span>
@@ -641,6 +703,22 @@ export default function EditInvitationPage() {
                 onChange={(event) => updateField("eventTime", event.target.value)}
               />
             </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label htmlFor="event-timezone" className="text-xs text-[var(--muted)]">Timezone</label>
+              <select
+                id="event-timezone"
+                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
+                value={form.timezone}
+                onChange={(event) => updateField("timezone", event.target.value)}
+              >
+                {timezoneOptions.map((timezone) => (
+                  <option key={timezone} value={timezone}>{timezone}</option>
+                ))}
+              </select>
+            </div>
+            <details className="rounded-xl border border-white/10 px-4 py-3 md:col-span-2">
+              <summary className="cursor-pointer text-sm text-[var(--muted)]">Date & time display options</summary>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Date format
@@ -670,9 +748,12 @@ export default function EditInvitationPage() {
                 <option value="HH:mm">18:00</option>
               </select>
             </div>
+              </div>
+            </details>
+            <h3 className="mt-2 border-t border-white/10 pt-5 text-sm font-semibold md:col-span-2">Location</h3>
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Location <span className="normal-case">(id: location)</span>
+                Venue <span className="normal-case">(id: location)</span>
               </label>
               <input
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
@@ -714,7 +795,9 @@ export default function EditInvitationPage() {
                 placeholder="https://registry.example.com"
               />
             </div>
-            <div className="flex flex-col gap-2 md:col-span-2">
+            <details className="rounded-xl border border-white/10 px-4 py-3 md:col-span-2">
+              <summary className="cursor-pointer text-sm text-[var(--muted)]">Embedded map{form.mapEmbed ? " (added)" : " (optional)"}</summary>
+            <div className="mt-4 flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Map embed code <span className="normal-case">(id: map_link)</span>
               </label>
@@ -725,6 +808,8 @@ export default function EditInvitationPage() {
                 placeholder="<iframe src=...></iframe>"
               />
             </div>
+            </details>
+            <h3 className="mt-2 border-t border-white/10 pt-5 text-sm font-semibold md:col-span-2">A note for your guests</h3>
             <div className="flex flex-col gap-2 md:col-span-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Notes <span className="normal-case">(id: notes)</span>
@@ -736,7 +821,10 @@ export default function EditInvitationPage() {
                 placeholder="Dress code, parking, or any special notes."
               />
             </div>
-            <div className="flex flex-col gap-2 md:col-span-2">
+            <details className="rounded-xl border border-white/10 px-4 py-3 md:col-span-2">
+              <summary className="cursor-pointer text-sm text-[var(--muted)]">Additional notes{form.notes2 || form.notes3 ? " (added)" : " (optional)"}</summary>
+              <div className="mt-4 grid gap-4">
+            <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Notes section 2 <span className="normal-case">(id: notes_2)</span>
               </label>
@@ -747,7 +835,7 @@ export default function EditInvitationPage() {
                 placeholder="Additional details or helpful info."
               />
             </div>
-            <div className="flex flex-col gap-2 md:col-span-2">
+            <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
                 Notes section 3 <span className="normal-case">(id: notes_3)</span>
               </label>
@@ -758,9 +846,12 @@ export default function EditInvitationPage() {
                 placeholder="Last call, reminders, or footer copy."
               />
             </div>
+              </div>
+            </details>
           </div>
+          ) : null}
 
-          {activeTouchpointKind === "invitation" ? (
+          {activeSection === "rsvp" && activeTouchpointKind === "invitation" ? (
           <div className="grid gap-4 md:grid-cols-3 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -795,26 +886,11 @@ export default function EditInvitationPage() {
           </div>
           ) : null}
 
+          {activeSection === "rsvp" ? (
           <div className="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
             <div className="flex flex-col gap-2">
               <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Timezone
-              </label>
-              <select
-                className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
-                value={form.timezone}
-                onChange={(event) => updateField("timezone", event.target.value)}
-              >
-                {timezoneOptions.map((timezone) => (
-                  <option key={timezone} value={timezone}>
-                    {timezone}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-                Count mode
+                Guest counts
               </label>
               <select
                 className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 text-sm outline-none focus:border-[var(--accent)]"
@@ -835,6 +911,7 @@ export default function EditInvitationPage() {
                 type="button"
                 role="switch"
                 aria-checked={form.shareGuestList}
+                aria-label="Share guest list and group chat"
                 onClick={() => updateField("shareGuestList", !form.shareGuestList)}
                 className="oi-toggle shrink-0"
               >
@@ -842,21 +919,10 @@ export default function EditInvitationPage() {
               </button>
             </div>
           </div>
+          ) : null}
 
+          {activeSection === "design" ? (
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <button
-              type="submit"
-              className="rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-black shadow-lg shadow-[var(--accent)]/40 transition hover:-translate-y-0.5"
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Save changes"}
-            </button>
-            <a
-              className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-              href={`/dashboard/invitations/${invitationId}/guests`}
-            >
-              Manage guests
-            </a>
             {form.previewToken && form.templateUrlLive ? (
               <a
                 className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
@@ -877,24 +943,31 @@ export default function EditInvitationPage() {
                 Preview draft
               </a>
             ) : null}
+          </div>
+          ) : null}
+          {activeSection === "rsvp" ? (
+          <div className="border-t border-white/10 pt-4">
+            {form.openRsvpToken ? (
+              <a className="text-sm text-[var(--accent)] underline underline-offset-4" href={`/i/open/${form.openRsvpToken}`} target="_blank" rel="noreferrer">
+                Open public invitation
+              </a>
+            ) : null}
+          </div>
+          ) : null}
+          {activeSection === "hosts" ? (
+          <>
+          <div>
             <button
-              className="rounded-full border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+              className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium transition hover:bg-white/10"
               type="button"
               onClick={handleCreateHostInvite}
             >
               Create host invite link
             </button>
-            {form.openRsvpToken ? (
-              <span className="break-all text-xs text-[var(--muted)]">
-                Open RSVP: /i/open/{form.openRsvpToken}
-              </span>
-            ) : null}
-            {message ? <span className="text-sm text-[var(--muted)]">{message}</span> : null}
           </div>
-          <section className="mt-2 grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
-              Host RSVP notifications
-            </p>
+          <section className="grid gap-3">
+            <h3 className="text-sm font-semibold">RSVP email notifications</h3>
+            <p className="text-xs text-[var(--muted)]">Notification preferences are saved immediately.</p>
             {hostNotifications.map((host) => (
               <div
                 key={host.id}
@@ -910,6 +983,7 @@ export default function EditInvitationPage() {
                   type="button"
                   role="switch"
                   aria-checked={host.notifyOnRsvp}
+                  aria-label={`RSVP notifications for ${host.displayName || host.email}`}
                   className="oi-toggle"
                   onClick={() => toggleHostNotification(host.id, !host.notifyOnRsvp)}
                 >
@@ -940,6 +1014,22 @@ export default function EditInvitationPage() {
               </span>
             </button>
           ) : null}
+          </>
+          ) : null}
+          </section>
+
+          <div className="sticky bottom-3 z-20 flex flex-col gap-3 rounded-2xl border border-white/15 bg-[#120c26]/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <p role="status" className="text-sm text-[var(--muted)]">
+              {message || `Changes apply to ${activeTouchpointKind === "invitation" ? "Invitation" : "Save the date"}.`}
+            </p>
+            <button
+              type="submit"
+              className="shrink-0 rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save changes"}
+            </button>
+          </div>
         </form>
       </main>
     </div>
