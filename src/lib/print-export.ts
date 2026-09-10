@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { applyPreviewDataToHtml, type PreviewPayload } from "@/lib/preview-template";
 import { PRINT_HEIGHT, PRINT_WIDTH, setPngPrintResolution } from "@/lib/print-png";
 import { removePrintExtras } from "@/lib/print-layout";
+import { getPrintFontEmbedCSS } from "@/lib/print-fonts";
 
 const LAYOUT_WIDTH = 480;
 const LAYOUT_HEIGHT = 672;
@@ -137,8 +138,9 @@ export async function exportPrintPng(html: string): Promise<Blob> {
     if (Math.min(qr.getBoundingClientRect().width, qr.getBoundingClientRect().height) * scale < 300 || width > 4000 || height > 6000) {
       throw new Error("This template needs a 5 x 7 print layout. Add html.oi-print CSS for a 480 x 672px card and reserve room for #response. See the 5 x 7 template guide below.");
     }
+    const fontEmbedCSS = await withAssetTimeout(getPrintFontEmbedCSS(doc));
     const rendered = await withAssetTimeout(toCanvas(doc.documentElement, {
-      width, height, pixelRatio: scale, preferredFontFormat: "woff2",
+      width, height, pixelRatio: scale, preferredFontFormat: "woff2", fontEmbedCSS,
     }));
     const canvas = document.createElement("canvas");
     canvas.width = PRINT_WIDTH;

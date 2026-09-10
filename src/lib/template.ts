@@ -24,8 +24,35 @@ export type InvitationTemplateData = {
   calendarLink?: string | null;
 };
 
+const svgTags = [
+  "svg", "g", "defs", "symbol", "use", "path", "rect", "circle", "ellipse",
+  "line", "polyline", "polygon", "text", "tspan", "textpath", "desc",
+  "lineargradient", "radialgradient", "stop", "clippath", "mask", "pattern",
+  "textPath", "linearGradient", "radialGradient", "clipPath",
+];
+
+// Keep SVG-adjusted tag names and their lowercase equivalents. Attribute names
+// are normalized by the sanitizer and restored by the browser's HTML parser.
+const svgAttributes = [
+  "xmlns", "xmlns:xlink", "viewbox", "preserveaspectratio",
+  "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry", "fx", "fy",
+  "width", "height", "d", "points", "transform", "opacity", "color",
+  "fill", "fill-rule", "fill-opacity", "stroke", "stroke-width", "stroke-opacity",
+  "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset",
+  "clip-path", "clip-rule", "clippathunits", "mask", "maskunits", "maskcontentunits",
+  "gradientunits", "gradienttransform", "spreadmethod", "offset", "stop-color", "stop-opacity",
+  "patternunits", "patterncontentunits", "patterntransform",
+  "font-family", "font-size", "font-weight", "font-style", "letter-spacing",
+  "text-anchor", "dominant-baseline", "alignment-baseline", "dx", "dy", "rotate",
+  "textlength", "lengthadjust", "startoffset", "vector-effect",
+];
+
 const allowedTags = [
+  "html",
+  "head",
+  "body",
   "a",
+  "article",
   "b",
   "blockquote",
   "br",
@@ -54,10 +81,12 @@ const allowedTags = [
   "strong",
   "style",
   "ul",
+  ...svgTags,
 ];
 
 const allowedAttributes = {
-  "*": ["class", "id", "style"],
+  "*": ["class", "id", "style", "role", "aria-*"],
+  html: ["lang", "dir"],
   a: ["href", "target", "rel", "class", "id", "style"],
   img: ["src", "alt", "class", "id", "style"],
   link: ["href", "rel", "as", "type", "crossorigin"],
@@ -74,7 +103,19 @@ const allowedAttributes = {
     "height",
   ],
   meta: ["charset", "name", "content", "http-equiv"],
+  ...Object.fromEntries(svgTags.map((tag) => [tag, svgAttributes])),
+  use: [...svgAttributes, "href", "xlink:href"],
+  textpath: [...svgAttributes, "href", "xlink:href"],
+  textPath: [...svgAttributes, "href", "xlink:href"],
 };
+
+function localSvgReference(tagName: string, attributes: sanitizeHtml.Attributes) {
+  const attribs = { ...attributes };
+  for (const name of ["href", "xlink:href"]) {
+    if (attribs[name] && !/^#[^\s"'<>]+$/.test(attribs[name])) delete attribs[name];
+  }
+  return { tagName, attribs };
+}
 
 const placeholderIds = {
   title: "title",
@@ -183,8 +224,8 @@ function ensureTitle(html: string, title: string) {
     return html.replace(/<title>.*?<\/title>/i, () => `<title>${safe}</title>`);
   }
 
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, (match) => `${match}<title>${safe}</title>`);
+  if (/<head\b[^>]*>/i.test(html)) {
+    return html.replace(/<head\b[^>]*>/i, (match) => `${match}<title>${safe}</title>`);
   }
 
   return `<head><title>${safe}</title></head>${html}`;
@@ -248,6 +289,9 @@ export function sanitizeTemplate(html: string) {
       link: ["https"],
     },
     disallowedTagsMode: "discard",
+    transformTags: { use: localSvgReference, textpath: localSvgReference, textPath: localSvgReference },
+    // Discard document-title text too, so it cannot leak into the visible page.
+    nonTextTags: ["style", "script", "textarea", "option", "xmp", "title", "foreignobject", "foreignObject", "animate", "animatetransform", "animateTransform", "animatemotion", "animateMotion", "set"],
   });
 }
 
@@ -381,7 +425,11 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
     output = removeElementById(output, placeholderIds.calendarLink);
   }
 
-  return output;
+  // Sanitization removes the doctype. Restore standards mode for full documents
+  // so public pages use the same layout rules as browser previews.
+  return /<html\b/i.test(output) && !/<!doctype\s+html\b/i.test(output)
+    ? "<!doctype html>" + output
+    : output;
 }
 
 export const templatePlaceholders = placeholderIds;

@@ -227,12 +227,21 @@ Links support `https`, `http`, `mailto`, and relative `/path` URLs.
 
 OpenInvite sanitizes your template. These tags are permitted:
 
+- `html`, `head`, `body`, `article`
 - `a`, `b`, `blockquote`, `br`, `code`, `div`, `em`, `footer`, `header`
 - `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `hr`, `img`, `iframe`
 - `li`, `link`, `main`, `meta`, `ol`, `p`, `section`, `span`, `strong`, `style`, `ul`
 
 Allowed attributes include `class`, `id`, and `style` on all elements, plus
 safe attributes for `a`, `img`, `link`, `iframe`, and `meta`.
+
+Static inline SVG artwork is supported, including `svg`, `g`, `defs`, `symbol`,
+`use`, paths, basic shapes, text, gradients, masks, and clip paths. Geometry,
+transforms, fills, strokes, and SVG text positioning are preserved. References
+on `use` and `textPath` must point to local fragment IDs such as `#daisy`.
+SVG scripts, event handlers, animation elements, and embedded HTML through
+`foreignObject` are removed. Template document-title text is discarded rather
+than exposed as page content.
 
 ## External assets
 
