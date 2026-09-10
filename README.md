@@ -2,6 +2,19 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Use Node.js 22.13+ and pnpm 12.3.4. Install dependencies with `pnpm install`.
+Configure `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `.env.local`.
+
+Checks: `pnpm lint`, `pnpm test`, and `pnpm build`.
+
+### Dependency compatibility
+
+Runtime dependencies track the latest stable releases. ESLint stays on 9.39.5
+and TypeScript on 6.0.3 because Next.js's lint plugins do not yet support ESLint
+10 / TypeScript 7. Revisit these constraints when the plugins add support.
+The pnpm workspace configuration allows required native build scripts and
+overrides Drizzle Kit's legacy esbuild dependency with a patched release.
+
 First, run the development server:
 
 ```bash

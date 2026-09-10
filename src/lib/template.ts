@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { escapeHtml } from "@/lib/html";
 
 export type InvitationTemplateData = {
   title: string;
@@ -99,15 +100,6 @@ const placeholderIds = {
   calendarLink: "calendar_link",
 } as const;
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function sanitizeMarkdownHref(value: string) {
   const href = value.trim();
   if (/^(https?:\/\/|mailto:|\/)/i.test(href)) {
@@ -169,26 +161,26 @@ function setContent(html: string, id: string, value: string | null) {
   if (!value) return html;
   const safe = escapeHtml(value);
   const pattern = new RegExp(
-    `<([^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</[^>]+>`,
+    `<([a-z][a-z0-9:-]*)(\\s[^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</\\1\\s*>`,
     "i"
   );
-  return html.replace(pattern, `<$1>${safe}</$1>`);
+  return html.replace(pattern, (_, tag, attrs) => `<${tag}${attrs}>${safe}</${tag}>`);
 }
 
 function setMultilineContent(html: string, id: string, value: string | null) {
   if (!value) return html;
   const safe = renderLimitedMarkdown(value);
   const pattern = new RegExp(
-    `<([^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</[^>]+>`,
+    `<([a-z][a-z0-9:-]*)(\\s[^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</\\1\\s*>`,
     "i"
   );
-  return html.replace(pattern, `<$1>${safe}</$1>`);
+  return html.replace(pattern, (_, tag, attrs) => `<${tag}${attrs}>${safe}</${tag}>`);
 }
 
 function ensureTitle(html: string, title: string) {
   const safe = escapeHtml(title);
   if (/<title>.*?<\/title>/i.test(html)) {
-    return html.replace(/<title>.*?<\/title>/i, `<title>${safe}</title>`);
+    return html.replace(/<title>.*?<\/title>/i, () => `<title>${safe}</title>`);
   }
 
   if (/<head[^>]*>/i.test(html)) {
@@ -201,15 +193,15 @@ function ensureTitle(html: string, title: string) {
 function setRawContent(html: string, id: string, value: string | null) {
   if (!value) return html;
   const pattern = new RegExp(
-    `<([^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</[^>]+>`,
+    `<([a-z][a-z0-9:-]*)(\\s[^>]*?\\bid=["']${id}["'][^>]*)>([\\s\\S]*?)</\\1\\s*>`,
     "i"
   );
-  return html.replace(pattern, `<$1>${value}</$1>`);
+  return html.replace(pattern, (_, tag, attrs) => `<${tag}${attrs}>${value}</${tag}>`);
 }
 
 function removeElementById(html: string, id: string) {
   const pattern = new RegExp(
-    `<[^>]*?\\bid=["']${id}["'][^>]*>[\\s\\S]*?</[^>]+>`,
+    `<([a-z][a-z0-9:-]*)\\s[^>]*?\\bid=["']${id}["'][^>]*>[\\s\\S]*?</\\1\\s*>`,
     "i"
   );
   return html.replace(pattern, "");
@@ -217,13 +209,15 @@ function removeElementById(html: string, id: string) {
 
 function setLink(html: string, id: string, href: string | null) {
   if (!href) return html;
-  const safe = escapeHtml(href);
+  const safe = escapeHtml(sanitizeMarkdownHref(href) ?? "#");
   const pattern = new RegExp(
     `<([^>]*?\\bid=["']${id}["'][^>]*?)>`,
     "i"
   );
   return html.replace(pattern, (match, start) => {
-    if (start.includes("href=")) return match;
+    if (/\bhref\s*=/i.test(start)) {
+      return `<${start.replace(/\bhref\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/i, () => `href="${safe}"`)}>`;
+    }
     return `<${start} href=\"${safe}\">`;
   });
 }
@@ -355,7 +349,7 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
       output = setContent(output, placeholderIds.mapLink, "Map Link");
     } else {
       const anchor = `<a href="${escapeHtml(
-        data.mapLink
+        sanitizeMarkdownHref(data.mapLink) ?? "#"
       )}" target="_blank" rel="noreferrer">Map Link</a>`;
       output = setRawContent(output, placeholderIds.mapLink, anchor);
     }
@@ -365,7 +359,7 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
 
   if (data.registryLink) {
     const registryAnchor = `<a href="${escapeHtml(
-      data.registryLink
+      sanitizeMarkdownHref(data.registryLink) ?? "#"
     )}" target="_blank" rel="noreferrer">Gift Registry</a>`;
     output = setRawContent(output, placeholderIds.registryLink, registryAnchor);
   } else {
@@ -380,7 +374,7 @@ export function injectTemplateData(html: string, data: InvitationTemplateData) {
 
   if (data.calendarLink) {
     const calendarAnchor = `<a class="oi-calendar-link" href="${escapeHtml(
-      data.calendarLink
+      sanitizeMarkdownHref(data.calendarLink) ?? "#"
     )}">Add to calendar</a>`;
     output = setRawContent(output, placeholderIds.calendarLink, calendarAnchor);
   } else {

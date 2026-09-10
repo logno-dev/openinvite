@@ -3,20 +3,18 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth";
+import { readStringFields } from "@/lib/request";
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
 import { clearOpenClaimCookies, collectClaimGuestTokens } from "@/lib/respondent-claim";
 import { createSession, setSessionCookie } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-type LoginPayload = {
-  email?: string;
-  password?: string;
-  claimGuestToken?: string;
-};
-
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as LoginPayload;
+  const body = await readStringFields(request, ["email", "password", "claimGuestToken"]);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password ?? "";
   const claimGuestToken = body.claimGuestToken?.trim() || null;

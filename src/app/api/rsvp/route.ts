@@ -11,6 +11,7 @@ import {
   users,
 } from "@/db/schema";
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
+import { escapeHtml } from "@/lib/html";
 import { isMailerConfigured, sendMail } from "@/lib/mailer";
 import { getSessionUserByToken, SESSION_COOKIE } from "@/lib/session";
 import { getResolvedTouchpoint } from "@/lib/touchpoints";
@@ -19,8 +20,10 @@ export const runtime = "nodejs";
 
 function parseNumber(value: string | null) {
   if (!value) return 0;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 2147483647
+    ? parsed
+    : 0;
 }
 
 async function findOption(invitationId: string, key: string) {
@@ -29,6 +32,20 @@ async function findOption(invitationId: string, key: string) {
     .from(rsvpOptions)
     .where(eq(rsvpOptions.invitationId, invitationId));
   return options.some((opt) => opt.key === key);
+}
+
+async function validateRsvp(invitationId: string, responseKey: string) {
+  const touchpoint = await getResolvedTouchpoint(invitationId, "invitation");
+  if (touchpoint && !touchpoint.collectRsvp) {
+    return NextResponse.json(
+      { error: "RSVP is disabled for this invitation" },
+      { status: 400 }
+    );
+  }
+  if (!(await findOption(invitationId, responseKey))) {
+    return NextResponse.json({ error: "Invalid response option" }, { status: 400 });
+  }
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -84,6 +101,8 @@ export async function POST(request: Request) {
 
     groupId = group[0].id;
     invitationId = group[0].invitationId;
+    const validationError = await validateRsvp(invitationId, responseKey);
+    if (validationError) return validationError;
     guestDisplayName = group[0].displayName;
     guestGroupToken = guestToken;
     guestConstraints = {
@@ -99,14 +118,16 @@ export async function POST(request: Request) {
     }
 
     if (sessionUser) {
-      await linkGuestGroupToUserByToken(sessionUser.id, guestToken, {
+      const claim = await linkGuestGroupToUserByToken(sessionUser.id, guestToken, {
         userEmail: sessionUser.email,
       });
 
-      await db
-        .update(guestGroups)
-        .set({ email: sessionUser.email })
-        .where(eq(guestGroups.id, groupId));
+      if (claim.linked) {
+        await db
+          .update(guestGroups)
+          .set({ email: sessionUser.email })
+          .where(eq(guestGroups.id, groupId));
+      }
     }
   } else if (openToken) {
     const invitation = await db
@@ -120,6 +141,8 @@ export async function POST(request: Request) {
     }
 
     invitationId = invitation[0].id;
+    const validationError = await validateRsvp(invitationId, responseKey);
+    if (validationError) return validationError;
     guestDisplayName = form.get("guestName")?.toString().trim() || "Guest";
 
     const existingTokenFromCookie = cookieStore.get(`oi_open_${openToken}`)?.value ?? null;
@@ -228,14 +251,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid RSVP" }, { status: 400 });
   }
 
-  const touchpoint = await getResolvedTouchpoint(invitationId, "invitation");
-  if (touchpoint && !touchpoint.collectRsvp) {
-    return NextResponse.json(
-      { error: "RSVP is disabled for this invitation" },
-      { status: 400 }
-    );
-  }
-
   const invitationConfig = await db
     .select({ countMode: invitations.countMode })
     .from(invitations)
@@ -248,23 +263,19 @@ export async function POST(request: Request) {
     total = Math.min(total, guestConstraints.expectedTotal);
   }
 
-  const validOption = await findOption(invitationId, responseKey);
-  if (!validOption) {
-    return NextResponse.json({ error: "Invalid response option" }, { status: 400 });
-  }
-
-  await db.delete(rsvpResponses).where(eq(rsvpResponses.groupId, groupId));
-
-  await db.insert(rsvpResponses).values({
-    id: crypto.randomUUID(),
-    groupId,
-    optionKey: responseKey,
-    adults,
-    kids,
-    total,
-    message,
-    respondedByUserId: null,
-  });
+  await db.batch([
+    db.delete(rsvpResponses).where(eq(rsvpResponses.groupId, groupId)),
+    db.insert(rsvpResponses).values({
+      id: crypto.randomUUID(),
+      groupId,
+      optionKey: responseKey,
+      adults,
+      kids,
+      total,
+      message,
+      respondedByUserId: sessionUser?.id ?? null,
+    }),
+  ]);
 
   if (isMailerConfigured()) {
     const hostRecipients = await db
@@ -302,7 +313,7 @@ export async function POST(request: Request) {
         await sendMail({
           to: recipientEmails,
           subject: `New RSVP: ${invitationTitle}`,
-          html: `<p>${guestDisplayName ?? "A guest"} submitted an RSVP for <strong>${invitationTitle}</strong>.</p><p>Response: ${responseLabel}<br/>Adults: ${adults}<br/>Kids: ${kids}<br/>Total: ${total}</p>`,
+          html: `<p>${escapeHtml(guestDisplayName ?? "A guest")} submitted an RSVP for <strong>${escapeHtml(invitationTitle)}</strong>.</p><p>Response: ${escapeHtml(responseLabel)}<br/>Adults: ${adults}<br/>Kids: ${kids}<br/>Total: ${total}</p>`,
           text: `${guestDisplayName ?? "A guest"} submitted an RSVP for ${invitationTitle}.\n\nResponse: ${responseLabel}\nAdults: ${adults}\nKids: ${kids}\nTotal: ${total}`,
         });
       } catch {
@@ -311,18 +322,20 @@ export async function POST(request: Request) {
     }
   }
 
-  const calendarToken = guestToken ?? openToken ?? "";
+  // These values are interpolated into HTML below, including attribute values.
+  guestDisplayName = guestDisplayName ? escapeHtml(guestDisplayName) : null;
+  const calendarToken = encodeURIComponent(guestToken ?? openToken ?? "");
   const calendarLink = calendarToken
     ? `<a href="/api/calendar/${calendarToken}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#00f0ff;color:#0a0a14;text-decoration:none;font-weight:600;">Add to calendar</a>`
     : "";
   const privateLink = guestGroupToken
-    ? `<a href="/i/${guestGroupToken}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#fef7ff;color:#0a0a14;text-decoration:none;font-weight:600;">Your private link</a>`
+    ? `<a href="/i/${encodeURIComponent(guestGroupToken)}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#fef7ff;color:#0a0a14;text-decoration:none;font-weight:600;">Your private link</a>`
     : "";
   const accountLink = guestGroupToken
     ? `<a href="/auth?next=/my-invitations&claimGuestToken=${encodeURIComponent(guestGroupToken)}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);color:#fef7ff;text-decoration:none;font-weight:600;">Create account to manage RSVP</a>`
     : "";
   const backLink = guestToken
-    ? `<a href="/i/${guestToken}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);color:#fef7ff;text-decoration:none;font-weight:600;">Back to invitation</a>`
+    ? `<a href="/i/${encodeURIComponent(guestToken)}" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);color:#fef7ff;text-decoration:none;font-weight:600;">Back to invitation</a>`
     : "";
   const thankYou = `<!doctype html><html><head><meta charset="utf-8"><title>RSVP received</title></head><body style="font-family: system-ui; padding: 40px; background: #0a0a14; color: #fef7ff; display:flex; align-items:center; justify-content:center; min-height:100vh;"><main style="text-align:center; max-width:560px; display:grid; gap:16px;"><h1 style="font-size:36px; margin:0;">RSVP received</h1><p style="margin:0; color:rgba(255,255,255,0.7);">Thanks${guestDisplayName ? ", " + guestDisplayName : ""}. You can return to update your response anytime.</p><div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">${privateLink}${calendarLink}${backLink}</div>${sessionUser ? "" : `<p style=\"margin:4px 0 0; color:rgba(255,255,255,0.7);\">Want to manage all your invitations in one place?</p><div style=\"display:flex; gap:12px; justify-content:center; flex-wrap:wrap;\">${accountLink}</div>`}</main></body></html>`;
   const response = new NextResponse(thankYou, {

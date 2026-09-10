@@ -3,25 +3,22 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
+import { readStringFields } from "@/lib/request";
 import { linkGuestGroupToUserByToken } from "@/lib/guest-groups";
 import { clearOpenClaimCookies, collectClaimGuestTokens } from "@/lib/respondent-claim";
 import { createSession, setSessionCookie } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-type RegisterPayload = {
-  email?: string;
-  password?: string;
-  displayName?: string;
-  claimGuestToken?: string;
-};
-
 function isValidEmail(value: string) {
-  return value.includes("@") && value.includes(".");
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as RegisterPayload;
+  const body = await readStringFields(request, ["email", "password", "displayName", "claimGuestToken"]);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password ?? "";
   const displayName = body.displayName?.trim() || null;
@@ -56,12 +53,15 @@ export async function POST(request: NextRequest) {
 
   const id = crypto.randomUUID();
 
-  await db.insert(users).values({
+  const inserted = await db.insert(users).values({
     id,
     email,
     passwordHash,
     displayName,
-  });
+  }).onConflictDoNothing({ target: users.email }).returning({ id: users.id });
+  if (inserted.length === 0) {
+    return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+  }
 
   const claimTokens = collectClaimGuestTokens(request, claimGuestToken);
   for (const token of claimTokens) {

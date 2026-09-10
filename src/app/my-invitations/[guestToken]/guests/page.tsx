@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import TopNav from "@/components/TopNav";
 import { dashboardNavLinks } from "@/lib/nav-links";
 
@@ -34,6 +34,7 @@ type GuestListPayload = {
 };
 
 export default function InvitationGuestListPage() {
+  const router = useRouter();
   const params = useParams();
   const guestToken = typeof params.guestToken === "string" ? params.guestToken : "";
   const [data, setData] = useState<GuestListPayload | null>(null);
@@ -46,7 +47,7 @@ export default function InvitationGuestListPage() {
       if (!guestToken) return;
       const response = await fetch(`/api/respondent/invitations/${guestToken}/guests`);
       if (response.status === 401) {
-        window.location.href = `/auth?next=/my-invitations/${guestToken}/guests`;
+        router.replace(`/auth?next=${encodeURIComponent(`/my-invitations/${guestToken}/guests`)}`);
         return;
       }
 
@@ -66,7 +67,7 @@ export default function InvitationGuestListPage() {
     }
 
     load();
-  }, [guestToken]);
+  }, [guestToken, router]);
 
   const totals = useMemo(() => {
     if (!data) return { adults: 0, kids: 0, total: 0, responses: 0 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import type { TemplateGalleryItem } from "@/lib/template-gallery";
 
 type TemplateGalleryClientProps = {
@@ -19,6 +20,7 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const [items, setItems] = useState<TemplateGalleryItem[]>(templates);
+  const [previousTemplates, setPreviousTemplates] = useState(templates);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +49,10 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
     };
   }, []);
 
-  useEffect(() => {
+  if (templates !== previousTemplates) {
+    setPreviousTemplates(templates);
     setItems(templates);
-  }, [templates]);
+  }
 
   function handleCopy(template: TemplateGalleryItem) {
     void navigator.clipboard.writeText(template.url);
@@ -218,9 +221,7 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
     });
   }, [items, query]);
 
-  const templateCards = useMemo(
-    () =>
-      filteredItems.map((template) => {
+  const templateCards = filteredItems.map((template) => {
         const previewHref = `/dashboard/templates/preview?templateUrl=${encodeURIComponent(
           template.url
         )}`;
@@ -231,8 +232,10 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
             className="flex flex-col gap-4 rounded-3xl border border-white/15 bg-white/5 p-6"
           >
             {template.thumbnailUrl ? (
-              <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/10">
-                <img
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/10">
+                <Image
+                  fill
+                  unoptimized
                   className="h-full w-full object-cover"
                   src={template.thumbnailUrl}
                   alt={`${template.name} preview`}
@@ -401,9 +404,7 @@ export default function TemplateGalleryClient({ templates }: TemplateGalleryClie
             ) : null}
           </article>
         );
-      }),
-    [filteredItems, copiedId, editingId, editForm, saving]
-  );
+      });
 
   return (
     <div className="grid gap-6">

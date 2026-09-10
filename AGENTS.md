@@ -19,9 +19,9 @@ Database / Drizzle:
 
 Tests:
 
-- No test framework is configured in this repo.
-- There is no single-test command yet. If tests are added, document the runner
-  and single-test syntax here.
+- Tests use Node's built-in test runner through tsx: `pnpm test`.
+- Single file: `pnpm exec tsx --test tests/template.test.ts`.
+- Single test: `pnpm exec tsx --test --test-name-pattern="pattern" tests/template.test.ts`.
 
 ## Env
 
@@ -133,4 +133,4 @@ Current tables:
 ## Missing Rules
 
 - No `.cursor` or Copilot instructions found.
-- No tests configured.
+- Regression tests live in `tests/`.

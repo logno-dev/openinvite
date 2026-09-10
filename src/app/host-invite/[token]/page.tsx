@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 export default function HostInvitePage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const token = typeof params.token === "string" ? params.token : "";
   const [message, setMessage] = useState("Accepting invite...");
 

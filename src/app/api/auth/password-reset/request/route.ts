@@ -3,15 +3,15 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { passwordResetTokens, users } from "@/db/schema";
 import { getAppUrl, isMailerConfigured, sendMail } from "@/lib/mailer";
+import { readStringFields } from "@/lib/request";
 
 export const runtime = "nodejs";
 
-type RequestPayload = {
-  email?: string;
-};
-
 export async function POST(request: Request) {
-  const body = (await request.json()) as RequestPayload;
+  const body = await readStringFields(request, ["email"]);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const email = body.email?.trim().toLowerCase() ?? "";
 
   if (!email) {

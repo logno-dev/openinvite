@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import TopNav from "@/components/TopNav";
 import { dashboardNavLinks } from "@/lib/nav-links";
 
@@ -30,6 +31,7 @@ type RespondentInvitation = {
 };
 
 export default function MyInvitationsPage() {
+  const router = useRouter();
   const [invitations, setInvitations] = useState<RespondentInvitation[]>([]);
   const [message, setMessage] = useState("");
 
@@ -37,7 +39,7 @@ export default function MyInvitationsPage() {
     async function load() {
       const response = await fetch("/api/respondent/invitations");
       if (response.status === 401) {
-        window.location.href = "/auth?next=/my-invitations";
+        router.replace("/auth?next=/my-invitations");
         return;
       }
 
@@ -57,7 +59,7 @@ export default function MyInvitationsPage() {
     }
 
     load();
-  }, []);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_10%_-10%,#2a2b52_0%,transparent_60%),radial-gradient(900px_600px_at_90%_10%,#1b1238_0%,transparent_60%),linear-gradient(180deg,#0a0a14_0%,#120c26_55%,#0a0a14_100%)] text-[var(--foreground)]">

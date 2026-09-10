@@ -1,6 +1,5 @@
-import type { ComponentProps, ComponentType } from "react";
-
-type MDXComponents = Record<string, ComponentType<any>>;
+import type { ComponentProps } from "react";
+import type { MDXComponents } from "mdx/types";
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {

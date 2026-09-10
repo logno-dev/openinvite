@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import TopNav from "@/components/TopNav";
 import { dashboardNavLinks } from "@/lib/nav-links";
 
@@ -13,6 +14,7 @@ type AccountSettings = {
 };
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [settings, setSettings] = useState<AccountSettings | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -24,7 +26,7 @@ export default function SettingsPage() {
     async function load() {
       const response = await fetch("/api/account/settings");
       if (response.status === 401) {
-        window.location.href = "/auth?next=/settings";
+        router.replace("/auth?next=/settings");
         return;
       }
 
@@ -47,7 +49,7 @@ export default function SettingsPage() {
     }
 
     load();
-  }, []);
+  }, [router]);
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
