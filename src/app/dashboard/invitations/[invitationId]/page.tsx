@@ -208,7 +208,9 @@ export default function EditInvitationPage() {
   useEffect(() => {
     async function load() {
       if (!invitationId) return;
-      const response = await fetch(`/api/invitations/${invitationId}`);
+      const response = await fetch(`/api/invitations/${invitationId}`, {
+        cache: "no-store",
+      });
       const contentType = response.headers.get("content-type") ?? "";
       let data: InvitationResponse | { error?: string } = { error: "Failed to load" };
 

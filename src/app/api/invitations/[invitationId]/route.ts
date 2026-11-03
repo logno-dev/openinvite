@@ -412,38 +412,41 @@ export async function GET(
       )
       .where(eq(invitationTouchpoints.invitationId, invitationId));
 
-    return NextResponse.json({
-      invitation: invitation[0],
-      details: details[0] ?? null,
-      rsvpOptions: options,
-      hosts,
-      touchpoints: touchpoints.map((tp) => ({
-        id: tp.id,
-        kind: tp.kind,
-        name: tp.name,
-        title: tp.title,
-        collectRsvp: tp.collectRsvp,
-        templateUrlDraft: tp.templateUrlDraft,
-        templateUrlLive: tp.templateUrlLive,
-        isActive: tp.isActive,
-        details: {
-          date: tp.date,
-          time: tp.time,
-          eventDate: tp.eventDate,
-          eventTime: tp.eventTime,
-          dateFormat: tp.dateFormat,
-          timeFormat: tp.timeFormat,
-          locationName: tp.locationName,
-          address: tp.address,
-          mapLink: tp.mapLink,
-          registryLink: tp.registryLink,
-          mapEmbed: tp.mapEmbed,
-          notes: tp.notes,
-          notes2: tp.notes2,
-          notes3: tp.notes3,
-        },
-      })),
-    });
+    return NextResponse.json(
+      {
+        invitation: invitation[0],
+        details: details[0] ?? null,
+        rsvpOptions: options,
+        hosts,
+        touchpoints: touchpoints.map((tp) => ({
+          id: tp.id,
+          kind: tp.kind,
+          name: tp.name,
+          title: tp.title,
+          collectRsvp: tp.collectRsvp,
+          templateUrlDraft: tp.templateUrlDraft,
+          templateUrlLive: tp.templateUrlLive,
+          isActive: tp.isActive,
+          details: {
+            date: tp.date,
+            time: tp.time,
+            eventDate: tp.eventDate,
+            eventTime: tp.eventTime,
+            dateFormat: tp.dateFormat,
+            timeFormat: tp.timeFormat,
+            locationName: tp.locationName,
+            address: tp.address,
+            mapLink: tp.mapLink,
+            registryLink: tp.registryLink,
+            mapEmbed: tp.mapEmbed,
+            notes: tp.notes,
+            notes2: tp.notes2,
+            notes3: tp.notes3,
+          },
+        })),
+      },
+      { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+    );
   } catch (error) {
     console.error("Invitation GET failed", error);
     return NextResponse.json({ error: "Failed to load invitation" }, { status: 500 });
