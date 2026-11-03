@@ -41,13 +41,6 @@ type UpdateInvitationPayload = {
   collectRsvp?: boolean;
 };
 
-async function assertTemplateUrl(url: string, label: string) {
-  const response = await fetch(url, { method: "GET", cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`${label} template not reachable`);
-  }
-}
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ invitationId: string }> }
@@ -75,26 +68,16 @@ export async function PATCH(
 
   const body = (await request.json()) as UpdateInvitationPayload;
   const touchpointKind = body.touchpointKind ?? "invitation";
-  const [currentInvitation, existingTouchpoint] = await Promise.all([
-    db
-      .select({ templateUrlLive: invitations.templateUrlLive })
-      .from(invitations)
-      .where(eq(invitations.id, invitationId))
-      .limit(1),
-    db
-      .select({
-        id: invitationTouchpoints.id,
-        templateUrlLive: invitationTouchpoints.templateUrlLive,
-      })
-      .from(invitationTouchpoints)
-      .where(
-        and(
-          eq(invitationTouchpoints.invitationId, invitationId),
-          eq(invitationTouchpoints.kind, touchpointKind)
-        )
+  const existingTouchpoint = await db
+    .select({ id: invitationTouchpoints.id })
+    .from(invitationTouchpoints)
+    .where(
+      and(
+        eq(invitationTouchpoints.invitationId, invitationId),
+        eq(invitationTouchpoints.kind, touchpointKind)
       )
-      .limit(1),
-  ]);
+    )
+    .limit(1);
 
   const invitationUpdate: Partial<typeof invitations.$inferInsert> = {};
   if (body.title !== undefined && touchpointKind === "invitation") {
@@ -114,31 +97,6 @@ export async function PATCH(
   }
   if (body.templateUrlLive !== undefined && touchpointKind === "invitation") {
     invitationUpdate.templateUrlLive = body.templateUrlLive?.trim() || null;
-  }
-
-  try {
-    // Draft URLs are not validated so browser-accessible localhost and LAN
-    // templates can be used. Only validate a live URL when it actually changes;
-    // the editor submits both URL fields with every save.
-    const requestedLiveUrl = body.templateUrlLive?.trim() || null;
-    const savedLiveUrl =
-      existingTouchpoint[0]?.templateUrlLive ??
-      (touchpointKind === "invitation"
-        ? currentInvitation[0]?.templateUrlLive ?? null
-        : null);
-    if (
-      body.templateUrlLive !== undefined &&
-      requestedLiveUrl &&
-      requestedLiveUrl !== savedLiveUrl
-    ) {
-      await assertTemplateUrl(requestedLiveUrl, "Live");
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Template not reachable";
-    return NextResponse.json(
-      { error: `${message}. Check the URL is being served.` },
-      { status: 400 }
-    );
   }
 
   if (Object.keys(invitationUpdate).length > 0) {
