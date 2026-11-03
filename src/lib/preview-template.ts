@@ -1,6 +1,7 @@
 import { renderRsvpForm } from "@/lib/rsvp";
 import { formatDate, formatTime } from "@/lib/date-format";
 import { stripTemplateNavigation } from "@/lib/template-navigation";
+import { resolveTemplateDocumentAssets } from "@/lib/template-assets";
 
 function escapeHtml(value: string) {
   return value
@@ -109,11 +110,13 @@ export type PreviewPayload = {
 export function applyPreviewDataToHtml(
   html: string,
   data: PreviewPayload,
-  mode: "guest" | "open" | "print"
+  mode: "guest" | "open" | "print",
+  templateUrl?: string
 ) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   stripTemplateNavigation(doc);
+  if (templateUrl) resolveTemplateDocumentAssets(doc, templateUrl);
 
   const details = data.details;
   const dateValue = details?.eventDate ?? details?.date ?? null;

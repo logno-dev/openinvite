@@ -30,7 +30,7 @@ export async function renderPrintTemplate(
 ): Promise<string> {
   const source = new DOMParser().parseFromString(html, "text/html");
   removePrintExtras(source);
-  const doc = new DOMParser().parseFromString(applyPreviewDataToHtml(source.documentElement.outerHTML, payload, "print"), "text/html");
+  const doc = new DOMParser().parseFromString(applyPreviewDataToHtml(source.documentElement.outerHTML, payload, "print", templateUrl), "text/html");
   doc.documentElement.classList.add("oi-print");
   doc.querySelectorAll("script, base, meta[http-equiv], iframe, object, embed, #calendar_link").forEach((node) => node.remove());
   for (const element of doc.querySelectorAll("*")) {
@@ -38,9 +38,6 @@ export async function renderPrintTemplate(
       if (attribute.name.toLowerCase().startsWith("on")) element.removeAttribute(attribute.name);
     }
   }
-  const base = doc.createElement("base");
-  base.href = templateUrl;
-  doc.head.prepend(base);
   // Request readable CSSOM rules from the start; setting this after load is too late.
   for (const link of doc.querySelectorAll<HTMLLinkElement>('link[rel~="stylesheet"][href]')) {
     link.crossOrigin = "anonymous";

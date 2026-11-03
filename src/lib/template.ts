@@ -1,5 +1,10 @@
 import sanitizeHtml from "sanitize-html";
 import { escapeHtml } from "@/lib/html";
+import {
+  resolveTemplateAssetUrl,
+  resolveTemplateCssUrls,
+  resolveTemplateSrcset,
+} from "@/lib/template-assets";
 
 export type InvitationTemplateData = {
   title: string;
@@ -88,7 +93,7 @@ const allowedAttributes = {
   html: ["lang", "dir"],
   // Template anchors retain their appearance, but destinations come from data injection.
   a: ["class", "id", "style"],
-  img: ["src", "alt", "class", "id", "style"],
+  img: ["src", "srcset", "alt", "class", "id", "style"],
   link: ["href", "rel", "as", "type", "crossorigin"],
   meta: ["charset", "name", "content", "http-equiv"],
   ...Object.fromEntries(svgTags.map((tag) => [tag, svgAttributes])),
@@ -267,18 +272,52 @@ function ensureIframeClass(html: string, className: string) {
   });
 }
 
-export function sanitizeTemplate(html: string) {
-  return sanitizeHtml(html, {
+export function sanitizeTemplate(html: string, templateUrl?: string) {
+  const source = templateUrl
+    ? html.replace(
+        /(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/gi,
+        (_, start: string, css: string, end: string) =>
+          `${start}${resolveTemplateCssUrls(css, templateUrl)}${end}`
+      )
+    : html;
+  const resolveAssets = (tagName: string, attributes: sanitizeHtml.Attributes) => {
+    const attribs = { ...attributes };
+    if (templateUrl) {
+      if (tagName === "img" && attribs.src) {
+        attribs.src = resolveTemplateAssetUrl(attribs.src, templateUrl);
+      }
+      if (tagName === "img" && attribs.srcset) {
+        attribs.srcset = resolveTemplateSrcset(attribs.srcset, templateUrl);
+      }
+      if (tagName === "link" && attribs.href) {
+        attribs.href = resolveTemplateAssetUrl(attribs.href, templateUrl);
+      }
+      if (attribs.style) {
+        attribs.style = resolveTemplateCssUrls(attribs.style, templateUrl);
+      }
+    }
+    return { tagName, attribs };
+  };
+  const resolveLocalSvgReference = (tagName: string, attributes: sanitizeHtml.Attributes) =>
+    localSvgReference(tagName, resolveAssets(tagName, attributes).attribs);
+
+  return sanitizeHtml(source, {
     allowedTags,
     allowedAttributes,
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesByTag: {
       iframe: ["https"],
       link: ["https"],
+      img: ["http", "https", "data"],
     },
     disallowedTagsMode: "discard",
     exclusiveFilter: (frame) => frame.tag === "meta" && "http-equiv" in frame.attribs,
-    transformTags: { use: localSvgReference, textpath: localSvgReference, textPath: localSvgReference },
+    transformTags: {
+      "*": resolveAssets,
+      use: resolveLocalSvgReference,
+      textpath: resolveLocalSvgReference,
+      textPath: resolveLocalSvgReference,
+    },
     // Discard document-title text too, so it cannot leak into the visible page.
     nonTextTags: ["style", "script", "textarea", "option", "xmp", "title", "iframe", "object", "embed", "foreignobject", "foreignObject", "animate", "animatetransform", "animateTransform", "animatemotion", "animateMotion", "set"],
   });

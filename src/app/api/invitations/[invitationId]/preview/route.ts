@@ -15,7 +15,7 @@ async function fetchTemplate(url: string) {
   if (!response.ok) {
     throw new Error("Template fetch failed");
   }
-  return response.text();
+  return { html: await response.text(), sourceUrl: response.url || url };
 }
 
 export async function GET(
@@ -68,8 +68,8 @@ export async function GET(
     .from(rsvpOptions)
     .where(eq(rsvpOptions.invitationId, record.id));
 
-  const html = await fetchTemplate(templateUrlDraft);
-  const sanitized = sanitizeTemplate(html);
+  const { html, sourceUrl } = await fetchTemplate(templateUrlDraft);
+  const sanitized = sanitizeTemplate(html, sourceUrl);
   const dateValue = touchpoint?.details.eventDate ?? touchpoint?.details.date ?? null;
   const timeValue = touchpoint?.details.eventTime ?? touchpoint?.details.time ?? null;
   const formattedDate = formatDate(

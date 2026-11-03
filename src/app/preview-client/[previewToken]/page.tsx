@@ -57,7 +57,7 @@ export default function PreviewClientPage() {
           return;
         }
         const templateHtml = await templateResponse.text();
-        setHtml(applyPreviewDataToHtml(templateHtml, payload, mode));
+        setHtml(applyPreviewDataToHtml(templateHtml, payload, mode, templateResponse.url || templateUrl));
       } catch {
         setError("Template URL is not reachable from this browser.");
       }

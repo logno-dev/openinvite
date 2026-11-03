@@ -27,6 +27,21 @@ test("template document titles do not become visible invitation text", () => {
   assert.equal(result, '<!doctype html><html><head><title>Party</title></head><body><main><h1 id="title">Party</h1></main></body></html>');
 });
 
+test("relative template assets resolve against the template source URL", () => {
+  const sanitized = sanitizeTemplate(
+    '<html><head><link rel="stylesheet" href="./styles/card.css"><style>.hero{background:url(../art/paper.png)}</style></head><body style="background-image:url(\'./art/bg.png\')"><img src="images/flowers.png" srcset="images/flowers.png 1x, /images/flowers@2x.png 2x"><img src="https://cdn.example.com/seal.png"><img src="data:image/png;base64,abc"></body></html>',
+    "https://templates.example.com/cards/wedding/index.html"
+  );
+
+  assert.ok(sanitized.includes('href="https://templates.example.com/cards/wedding/styles/card.css"'));
+  assert.ok(sanitized.includes("url(https://templates.example.com/cards/art/paper.png)"));
+  assert.ok(sanitized.includes("url('https://templates.example.com/cards/wedding/art/bg.png')"));
+  assert.ok(sanitized.includes('src="https://templates.example.com/cards/wedding/images/flowers.png"'));
+  assert.ok(sanitized.includes('srcset="https://templates.example.com/cards/wedding/images/flowers.png 1x, https://templates.example.com/images/flowers@2x.png 2x"'));
+  assert.ok(sanitized.includes('src="https://cdn.example.com/seal.png"'));
+  assert.ok(sanitized.includes('src="data:image/png;base64,abc"'));
+});
+
 test("a header element is not mistaken for the document head", () => {
   const result = injectTemplateData('<header class="hero"><h1 id="title"></h1></header>', data);
   assert.equal(result, '<head><title>Party</title></head><header class="hero"><h1 id="title">Party</h1></header>');

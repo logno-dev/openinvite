@@ -19,7 +19,7 @@ async function fetchTemplate(url: string) {
   if (!response.ok) {
     throw new Error("Template fetch failed");
   }
-  return response.text();
+  return { html: await response.text(), sourceUrl: response.url || url };
 }
 
 export async function GET(
@@ -72,8 +72,8 @@ export async function GET(
 
   let injected = "";
   try {
-    const html = await fetchTemplate(templateUrlDraft);
-    const sanitized = sanitizeTemplate(html);
+    const { html, sourceUrl } = await fetchTemplate(templateUrlDraft);
+    const sanitized = sanitizeTemplate(html, sourceUrl);
     const responseHtml =
       touchpoint?.collectRsvp === false
         ? null
