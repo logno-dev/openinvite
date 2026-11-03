@@ -70,7 +70,7 @@ export default function PrintExport({ previewToken, kind }: PrintExportProps) {
           A 5 &times; 7-inch portrait PNG at 300 DPI (1500 &times; 2100 pixels), with a QR code in place of the RSVP form.
         </p>
         <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-          Uses your saved title, hosts, date, time, and location. Notes, registry links, and other extras stay on the digital invitation.
+          Uses your saved title, hosts, date, time, location, and notes. Registry links and other interactive extras stay on the digital invitation.
           Your template controls the print design through html.oi-print styles.
           The QR code opens the public digital invitation, so set a working live invitation template before printing.
         </p>

@@ -47,11 +47,12 @@ end of the main content. The QR always opens the live invitation, including when
 you export a draft or a save-the-date. Set a working live invitation template
 before distributing printed cards.
 
-Print exports keep the title, hosts, date, time, venue, address, and QR code.
-Notes, registry links, maps, and guest-specific placeholders are omitted. The
-surrounding layout, illustrations, borders, backgrounds, and typography remain
-under your template's control. OpenInvite does not replace the design with a
-generic card or rewrite its spacing.
+Print exports keep the title, hosts, date, time, venue, address, notes, and QR
+code. Registry links, maps, and guest-specific placeholders are omitted. The
+template designer decides whether notes appear by using print CSS or the
+`oi-print-hide` class. The surrounding layout, illustrations, borders,
+backgrounds, and typography remain under your template's control. OpenInvite
+does not replace the design with a generic card or rewrite its spacing.
 
 <h3 id="print-layout-css">Print layout CSS</h3>
 
@@ -146,8 +147,9 @@ effect on the digital invitation.
 
 Only mark content sections this way. Keep artwork and shared background wrappers
 outside hidden sections so their design remains visible. Without an explicit
-marker, OpenInvite removes optional placeholders but preserves their wrappers;
-use your print CSS to hide those wrappers or reuse them in the card layout.
+marker, notes remain in the print document. OpenInvite removes interactive
+optional placeholders but preserves their wrappers; use your print CSS to hide
+those wrappers or reuse them in the card layout.
 
 <h3 id="print-qr-styling">Placing and styling the QR code</h3>
 
