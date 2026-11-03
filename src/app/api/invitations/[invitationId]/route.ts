@@ -75,6 +75,26 @@ export async function PATCH(
 
   const body = (await request.json()) as UpdateInvitationPayload;
   const touchpointKind = body.touchpointKind ?? "invitation";
+  const [currentInvitation, existingTouchpoint] = await Promise.all([
+    db
+      .select({ templateUrlLive: invitations.templateUrlLive })
+      .from(invitations)
+      .where(eq(invitations.id, invitationId))
+      .limit(1),
+    db
+      .select({
+        id: invitationTouchpoints.id,
+        templateUrlLive: invitationTouchpoints.templateUrlLive,
+      })
+      .from(invitationTouchpoints)
+      .where(
+        and(
+          eq(invitationTouchpoints.invitationId, invitationId),
+          eq(invitationTouchpoints.kind, touchpointKind)
+        )
+      )
+      .limit(1),
+  ]);
 
   const invitationUpdate: Partial<typeof invitations.$inferInsert> = {};
   if (body.title !== undefined && touchpointKind === "invitation") {
@@ -97,18 +117,21 @@ export async function PATCH(
   }
 
   try {
-    if (invitationUpdate.templateUrlDraft) {
-      // Draft URLs are not validated to allow localhost previews.
-    }
-    if (invitationUpdate.templateUrlLive) {
-      await assertTemplateUrl(invitationUpdate.templateUrlLive, "Live");
-    }
+    // Draft URLs are not validated so browser-accessible localhost and LAN
+    // templates can be used. Only validate a live URL when it actually changes;
+    // the editor submits both URL fields with every save.
+    const requestedLiveUrl = body.templateUrlLive?.trim() || null;
+    const savedLiveUrl =
+      existingTouchpoint[0]?.templateUrlLive ??
+      (touchpointKind === "invitation"
+        ? currentInvitation[0]?.templateUrlLive ?? null
+        : null);
     if (
-      touchpointKind !== "invitation" &&
       body.templateUrlLive !== undefined &&
-      body.templateUrlLive?.trim()
+      requestedLiveUrl &&
+      requestedLiveUrl !== savedLiveUrl
     ) {
-      await assertTemplateUrl(body.templateUrlLive.trim(), "Live");
+      await assertTemplateUrl(requestedLiveUrl, "Live");
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Template not reachable";
@@ -189,17 +212,6 @@ export async function PATCH(
     body.collectRsvp !== undefined ||
     hasTouchpointDetailChanges
   ) {
-    const existingTouchpoint = await db
-      .select({ id: invitationTouchpoints.id })
-      .from(invitationTouchpoints)
-      .where(
-        and(
-          eq(invitationTouchpoints.invitationId, invitationId),
-          eq(invitationTouchpoints.kind, touchpointKind)
-        )
-      )
-      .limit(1);
-
     const touchpointId = existingTouchpoint[0]?.id ?? crypto.randomUUID();
 
     if (existingTouchpoint.length === 0) {
