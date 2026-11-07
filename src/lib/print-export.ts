@@ -1,7 +1,13 @@
 import { toCanvas } from "html-to-image";
 import QRCode from "qrcode";
 import { applyPreviewDataToHtml, type PreviewPayload } from "@/lib/preview-template";
-import { PRINT_HEIGHT, PRINT_WIDTH, setPngPrintResolution } from "@/lib/print-png";
+import {
+  LETTER_LANDSCAPE_HEIGHT,
+  LETTER_LANDSCAPE_WIDTH,
+  PRINT_HEIGHT,
+  PRINT_WIDTH,
+  setPngPrintResolution,
+} from "@/lib/print-png";
 import { removePrintExtras } from "@/lib/print-layout";
 import { getPrintFontEmbedCSS } from "@/lib/print-fonts";
 
@@ -157,4 +163,60 @@ export async function exportPrintPng(html: string): Promise<Blob> {
   } finally {
     frame.remove();
   }
+}
+
+export async function exportLetterTwoUpPng(card: Blob): Promise<Blob> {
+  const image = await createImageBitmap(card);
+  const canvas = document.createElement("canvas");
+  canvas.width = LETTER_LANDSCAPE_WIDTH;
+  canvas.height = LETTER_LANDSCAPE_HEIGHT;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    image.close();
+    throw new Error("Your browser could not create the letter-size print sheet.");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Two portrait 5 x 7 cards fit upright on an 11 x 8.5-inch landscape sheet.
+  // This leaves 0.25-inch outer margins, a 0.5-inch center gap, and 0.75-inch
+  // top and bottom margins.
+  const positions = [75, 1725];
+  const top = 225;
+  for (const left of positions) {
+    context.drawImage(image, left, top, PRINT_WIDTH, PRINT_HEIGHT);
+  }
+  image.close();
+
+  // Short crop marks stay outside each card so they do not alter its artwork.
+  context.strokeStyle = "#777777";
+  context.lineWidth = 2;
+  const markLength = 45;
+  const markGap = 10;
+  context.beginPath();
+  for (const left of positions) {
+    const right = left + PRINT_WIDTH;
+    const bottom = top + PRINT_HEIGHT;
+    for (const x of [left, right]) {
+      context.moveTo(x, top - markGap);
+      context.lineTo(x, top - markGap - markLength);
+      context.moveTo(x, bottom + markGap);
+      context.lineTo(x, bottom + markGap + markLength);
+    }
+    for (const y of [top, bottom]) {
+      context.moveTo(left - markGap, y);
+      context.lineTo(left - markGap - markLength, y);
+      context.moveTo(right + markGap, y);
+      context.lineTo(right + markGap + markLength, y);
+    }
+  }
+  context.stroke();
+
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
+    (value) => value ? resolve(value) : reject(new Error("Letter-size PNG export failed.")),
+    "image/png"
+  ));
+  const bytes = setPngPrintResolution(new Uint8Array(await blob.arrayBuffer()));
+  return new Blob([bytes], { type: "image/png" });
 }

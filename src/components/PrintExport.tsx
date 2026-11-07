@@ -11,6 +11,7 @@ type PrintExportProps = {
 
 export default function PrintExport({ previewToken, kind }: PrintExportProps) {
   const [source, setSource] = useState<"live" | "draft">("live");
+  const [layout, setLayout] = useState<"single" | "letter-two-up">("single");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ url: string; filename: string; publicUrl: string } | null>(null);
@@ -46,15 +47,17 @@ export default function PrintExport({ previewToken, kind }: PrintExportProps) {
       }
       if (!template.ok) throw new Error("The template URL returned an error. Check the URL and try again.");
       const publicUrl = new URL(`/i/open/${encodeURIComponent(payload.invitation.openRsvpToken)}`, window.location.origin).href;
-      const { renderPrintTemplate, exportPrintPng } = await import("@/lib/print-export");
+      const { renderPrintTemplate, exportPrintPng, exportLetterTwoUpPng } = await import("@/lib/print-export");
       const html = await renderPrintTemplate(await template.text(), payload, template.url || new URL(templateUrl, window.location.origin).href, publicUrl);
       if (current !== generation.current) return;
-      const blob = await exportPrintPng(html);
+      const card = await exportPrintPng(html);
+      const blob = layout === "letter-two-up" ? await exportLetterTwoUpPng(card) : card;
       if (current !== generation.current) return;
       const url = URL.createObjectURL(blob);
       urlRef.current = url;
       const title = payload.invitation.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 80) || "invitation";
-      setResult({ url, filename: `${title}-${kind}-5x7-300dpi.png`, publicUrl });
+      const suffix = layout === "letter-two-up" ? "letter-two-up-300dpi" : "5x7-300dpi";
+      setResult({ url, filename: `${title}-${kind}-${suffix}.png`, publicUrl });
     } catch (err) {
       if (current === generation.current) setError(err instanceof Error ? err.message : "Unable to export this template.");
     } finally {
@@ -67,7 +70,7 @@ export default function PrintExport({ previewToken, kind }: PrintExportProps) {
       <div>
         <h3 id="print-export-heading" className="text-sm font-semibold">Print / export</h3>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          A 5 &times; 7-inch portrait PNG at 300 DPI (1500 &times; 2100 pixels), with a QR code in place of the RSVP form.
+          Export one 5 &times; 7-inch card or two cards on a landscape 8.5 &times; 11-inch sheet, at 300 DPI.
         </p>
         <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
           Uses your saved title, hosts, date, time, location, and notes. Registry links and other interactive extras stay on the digital invitation.
@@ -98,6 +101,25 @@ export default function PrintExport({ previewToken, kind }: PrintExportProps) {
             <option value="draft">Draft template</option>
           </select>
         </div>
+        <div className="grid gap-2 sm:w-56">
+          <label htmlFor="print-output-layout" className="text-xs text-[var(--muted)]">Output layout</label>
+          <select
+            id="print-output-layout"
+            value={layout}
+            disabled={busy}
+            onChange={(event) => {
+              setLayout(event.target.value as "single" | "letter-two-up");
+              setResult(null);
+              setError("");
+              if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+              urlRef.current = null;
+            }}
+            className="h-11 rounded-xl border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-[var(--accent)]"
+          >
+            <option value="single">Single 5 x 7 card</option>
+            <option value="letter-two-up">Two-up on US Letter</option>
+          </select>
+        </div>
         <button
           type="button"
           onClick={generate}
@@ -113,13 +135,24 @@ export default function PrintExport({ previewToken, kind }: PrintExportProps) {
       {result ? (
         <div className="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr] sm:items-start">
           <a href={result.url} target="_blank" rel="noreferrer" aria-label="Open full-size print preview">
-            <Image src={result.url} width={1500} height={2100} unoptimized alt="5 by 7 inch invitation with a QR code" className="h-auto w-full rounded-lg border border-white/15" />
+            <Image
+              src={result.url}
+              width={layout === "letter-two-up" ? 3300 : 1500}
+              height={layout === "letter-two-up" ? 2550 : 2100}
+              unoptimized
+              alt={layout === "letter-two-up" ? "Two 5 by 7 invitations on a letter-size sheet" : "5 by 7 inch invitation with a QR code"}
+              className="h-auto w-full rounded-lg border border-white/15"
+            />
           </a>
           <div className="grid justify-items-start gap-3">
             <a href={result.url} download={result.filename} className="rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-black">
               Download PNG
             </a>
-            <p className="text-xs leading-5 text-[var(--muted)]">Export size: 5 &times; 7 inches at 300 DPI. Print at actual size (100%).</p>
+            <p className="text-xs leading-5 text-[var(--muted)]">
+              {layout === "letter-two-up"
+                ? "Export size: 11 x 8.5 inches (landscape) at 300 DPI, with two 5 x 7 cards and cut guides. Print at actual size (100%)."
+                : "Export size: 5 x 7 inches at 300 DPI. Print at actual size (100%)."}
+            </p>
             <a href={result.publicUrl} target="_blank" rel="noreferrer" className="text-sm text-[var(--accent)] underline underline-offset-4">Open QR destination</a>
           </div>
         </div>

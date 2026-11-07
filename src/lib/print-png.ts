@@ -1,6 +1,8 @@
 export const PRINT_WIDTH = 1500;
 export const PRINT_HEIGHT = 2100;
 export const PRINT_DPI = 300;
+export const LETTER_LANDSCAPE_WIDTH = 3300;
+export const LETTER_LANDSCAPE_HEIGHT = 2550;
 
 function crc32(bytes: Uint8Array): number {
   let crc = 0xffffffff;

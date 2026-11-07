@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PRINT_DPI, PRINT_HEIGHT, PRINT_WIDTH, setPngPrintResolution } from "../src/lib/print-png";
+import {
+  LETTER_LANDSCAPE_HEIGHT,
+  LETTER_LANDSCAPE_WIDTH,
+  PRINT_DPI,
+  PRINT_HEIGHT,
+  PRINT_WIDTH,
+  setPngPrintResolution,
+} from "../src/lib/print-png";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9n8AAAAASUVORK5CYII=", "base64");
 
@@ -28,6 +35,13 @@ test("print export uses 5 by 7 inches at 300 DPI", () => {
   // Known CRC for a pHYs chunk containing 11811 x 11811 pixels per meter.
   assert.equal(view.getUint32(17), 0x78a53f76);
   assert.deepEqual(output.filter((chunk) => chunk.type !== "pHYs"), chunks(png));
+});
+
+test("two-up print export uses landscape US Letter dimensions", () => {
+  assert.equal(LETTER_LANDSCAPE_WIDTH / PRINT_DPI, 11);
+  assert.equal(LETTER_LANDSCAPE_HEIGHT / PRINT_DPI, 8.5);
+  assert.ok(PRINT_WIDTH * 2 <= LETTER_LANDSCAPE_WIDTH);
+  assert.ok(PRINT_HEIGHT <= LETTER_LANDSCAPE_HEIGHT);
 });
 
 test("print density replaces existing density rather than adding duplicate chunks", () => {
